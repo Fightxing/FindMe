@@ -1,7 +1,8 @@
 plugins {
     id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.7-SNAPSHOT"
-    id "com.github.johnrengelman.shadow" version "7.1.0"
+    id "dev.architectury.loom" version "1.13.467"
+    id "fabric-loom" version "1.10-SNAPSHOT" apply false
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "java"
     id "maven-publish"
 }
@@ -38,7 +39,7 @@ dependencies {
     modApi "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
 }
 
-archivesBaseName = rootProject.archives_base_name
+base.archivesName = rootProject.archives_base_name
 version = rootProject.mod_version
 group = rootProject.maven_group
 
