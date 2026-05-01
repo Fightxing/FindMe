@@ -1,6 +1,5 @@
 package com.buuz135.findme.client;
 
-import dev.architectury.event.events.client.ClientTickEvent;
 
 import java.util.Iterator;
 import java.util.LinkedList;
