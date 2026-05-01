@@ -31,8 +31,8 @@ jobs:
           modrinth-id: rEuzehyH
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           files: |
-            fabric/build/libs/*-fabric.jar
-            fabric/build/libs/!(*-fabric).jar
+            build/libs/*-fabric.jar
+            build/libs/!(*-fabric).jar
           version-type: beta
           loaders: fabric
           game-versions: 1.21
