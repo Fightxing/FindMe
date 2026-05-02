@@ -2,7 +2,6 @@ package com.buuz135.findme.mixin;
 
 import com.buuz135.findme.FindMeMod;
 import com.buuz135.findme.tracking.TrackingList;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.Slot;
@@ -21,9 +20,7 @@ public class MixinSlotRenderer {
         if (FindMeMod.CONFIG.CLIENT.CONTAINER_TRACKING && slot.hasItem()) {
             if (TrackingList.beingTracked(slot.getItem())) {
                 Color c = FindMeMod.CONFIG.CLIENT.getColor();
-                RenderSystem.disableDepthTest();
                 guiGraphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, c.getRGB());
-                RenderSystem.enableDepthTest();
             }
         }
     }
