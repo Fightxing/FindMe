@@ -1,8 +1,6 @@
 package com.buuz135.findme.client;
 
 import com.buuz135.findme.FindMeMod;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -10,35 +8,41 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.util.Mth;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.TriState;
+import net.minecraft.client.renderer.RenderStateShard;
+
 
 import java.awt.*;
 
 @Environment(EnvType.CLIENT)
 public class ParticlePosition extends SingleQuadParticle {
 
-    public static ParticleRenderType CUSTOM = new ParticleRenderType() {
-        @Nullable
-        @Override
-        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(true);
-            RenderSystem.setShader(GameRenderer::getParticleShader);
-            RenderSystem.setShaderTexture(0, ResourceLocation.withDefaultNamespace("textures/particle/glitter_4.png"));
-            RenderSystem.enableBlend();
-            RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            //RenderSystem.alphaFunc(516, 0.003921569F);
-            return tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
-        }
+    private static final RenderType FINDME_PARTICLE_RENDER_TYPE = RenderType.create(
+    "findme_particle",
+    DefaultVertexFormat.PARTICLE,
+    VertexFormat.Mode.QUADS,
+    256,
+    false,
+    true,
+    RenderType.CompositeState.builder()
+        .setShaderState(RenderStateShard.PARTICLE_SHADER)
+        .setTextureState(new RenderStateShard.TextureStateShard(
+            ResourceLocation.withDefaultNamespace("textures/particle/glitter_4.png"),
+            TriState.FALSE, false
+        ))
+        .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+        .setLightmapState(RenderStateShard.LIGHTMAP)
+        .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
+        .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+        .setCullState(RenderStateShard.NO_CULL)
+        .createCompositeState(false)
+);
 
-        public String toString() {
-            return "CUSTOM2";
-        }
-    };
+    public static final ParticleRenderType CUSTOM = new ParticleRenderType("CUSTOM2", FINDME_PARTICLE_RENDER_TYPE);
 
     public ParticlePosition(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ) {
         super(world, x, y, z, 0.0D, 0.0D, 0.0D);
