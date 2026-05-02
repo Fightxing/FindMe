@@ -2,16 +2,18 @@ package com.buuz135.findme.network;
 
 import com.buuz135.findme.FindMeMod;
 import com.buuz135.findme.tracking.TrackingList;
-import dev.architectury.networking.NetworkManager;
+
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,23 +62,23 @@ public class PositionRequestMessage implements CustomPacketPayload {
         return ItemStack.isSameItemSameComponents(first, second);
     }
 
-    public void handle(NetworkManager.PacketContext contextSupplier) {
-        contextSupplier.queue(() -> {
-            AABB box = new AABB(contextSupplier.getPlayer().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
+    public void handle(ServerPlayNetworking.Context context) {
+        context.player().server.execute(() -> {
+            AABB box = new AABB(context.player().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
             List<BlockPos> blockPosList = new ArrayList<>();
             for (BlockPos blockPos : getBlockPosInAABB(box)) {
-                BlockEntity tileEntity = contextSupplier.getPlayer().level().getBlockEntity(blockPos);
+                BlockEntity tileEntity = context.player().level().getBlockEntity(blockPos);
                 if (tileEntity != null && FindMeMod.BLOCK_CHECKERS.stream().anyMatch(predicate -> predicate.test(tileEntity, stack))) {
                     blockPosList.add(blockPos);
                 }
             }
             if (!blockPosList.isEmpty()) {
-                NetworkManager.sendToPlayer((ServerPlayer) contextSupplier.getPlayer(), new PositionResponseMessage(blockPosList));
+                ServerPlayNetworking.send((ServerPlayer) context.player(), new PositionResponseMessage(blockPosList));
             }
 
 
         });
-        //contextSupplier.get().setPacketHandled(true);
+        //context.player().setPacketHandled(true);
     }
 
     @Override

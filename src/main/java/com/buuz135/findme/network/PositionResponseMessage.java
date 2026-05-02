@@ -5,7 +5,7 @@ import com.buuz135.findme.FindMeMod;
 import com.buuz135.findme.client.ClientTickHandler;
 import com.buuz135.findme.client.ParticlePosition;
 import com.buuz135.findme.tracking.TrackingList;
-import dev.architectury.networking.NetworkManager;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -53,7 +53,7 @@ public class PositionResponseMessage implements CustomPacketPayload {
     }
 
 
-    public void handle(NetworkManager.PacketContext context) {
+    public void handle(ClientPlayNetworking.Context context) {
         Minecraft.getInstance().execute(() -> {
             if (positions.size() > 0) {
                 Minecraft.getInstance().player.closeContainer();

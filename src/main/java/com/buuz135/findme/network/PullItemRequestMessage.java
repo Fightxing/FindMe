@@ -3,7 +3,7 @@ package com.buuz135.findme.network;
 import com.buuz135.findme.FindMeMod;
 import com.buuz135.findme.IInventoryPuller;
 import com.buuz135.findme.tracking.TrackingList;
-import dev.architectury.networking.NetworkManager;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -52,15 +52,15 @@ public class PullItemRequestMessage implements CustomPacketPayload {
         return ItemStack.isSameItemSameComponents(first, second);
     }
 
-    public void handle(NetworkManager.PacketContext contextSupplier) {
-        contextSupplier.queue(() -> {
-            AABB box = new AABB(contextSupplier.getPlayer().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
+    public void handle(ServerPlayNetworking.Context context) {
+        context.player().server.execute(() -> {
+            AABB box = new AABB(context.player().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
             var currentAmount = 0;
             for (BlockPos blockPos : PositionRequestMessage.getBlockPosInAABB(box)) {
-                BlockEntity tileEntity = contextSupplier.getPlayer().level().getBlockEntity(blockPos);
+                BlockEntity tileEntity = context.player().level().getBlockEntity(blockPos);
                 if (tileEntity != null) {
                     for (IInventoryPuller blockExtractor : FindMeMod.BLOCK_EXTRACTORS) {
-                        currentAmount += blockExtractor.pull(tileEntity, stack, amount - currentAmount, contextSupplier.getPlayer());
+                        currentAmount += blockExtractor.pull(tileEntity, stack, amount - currentAmount, context.player());
                         if (currentAmount >= amount) {
                             break;
                         }
@@ -71,13 +71,13 @@ public class PullItemRequestMessage implements CustomPacketPayload {
                 }
             }
             if (currentAmount < amount) {
-                var player = contextSupplier.getPlayer();
+                var player = context.player();
                 var level = player.level();
                 level.playSound(null, player.getX(), player.getY() + 0.5, player.getZ(),
                         SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.5F, ((level.random.nextFloat() - level.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
             }
         });
-        //contextSupplier.get().setPacketHandled(true);
+        //context.player().setPacketHandled(true);
     }
 
     @Override

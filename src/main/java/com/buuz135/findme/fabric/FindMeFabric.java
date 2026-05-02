@@ -2,7 +2,10 @@ package com.buuz135.findme.fabric;
 
 import com.buuz135.findme.FindMeMod;
 import com.buuz135.findme.network.PositionRequestMessage;
-import dev.architectury.event.events.common.InteractionEvent;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.InteractionResult;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
@@ -25,9 +28,11 @@ public class FindMeFabric implements ModInitializer {
         FindMeMod.BLOCK_CHECKERS.add((blockEntity, stack) -> {
             try (Transaction transaction = Transaction.openOuter()) {
                 for (Direction value : Direction.values()) {
-                    Storage<ItemVariant> storage = ItemStorage.SIDED.find(blockEntity.getLevel(), blockEntity.getBlockPos(), blockEntity.getBlockState(), blockEntity, value);
-                    if (storage == null) continue;
-                    for (Iterator<StorageView<ItemVariant>> it = storage.iterator(); it.hasNext(); ) {
+                    Storage<ItemVariant> storage = ItemStorage.SIDED.find(blockEntity.getLevel(),
+                            blockEntity.getBlockPos(), blockEntity.getBlockState(), blockEntity, value);
+                    if (storage == null)
+                        continue;
+                    for (Iterator<StorageView<ItemVariant>> it = storage.iterator(); it.hasNext();) {
                         StorageView<ItemVariant> itemVariantStorageView = it.next();
                         ItemStack invStack = itemVariantStorageView.getResource().toStack();
                         if (!invStack.isEmpty() && PositionRequestMessage.compareItems(stack, invStack)) {
@@ -39,25 +44,37 @@ public class FindMeFabric implements ModInitializer {
             return false;
         });
         FindMeMod.BLOCK_EXTRACTORS.add((entity, stack, amount, player) -> {
-            if (InteractionEvent.RIGHT_CLICK_BLOCK.invoker().click(player, InteractionHand.MAIN_HAND, entity.getBlockPos(), Direction.UP).isFalse()) {
+            BlockHitResult hitResult = new BlockHitResult(
+                    Vec3.atCenterOf(entity.getBlockPos()),
+                    Direction.UP,
+                    entity.getBlockPos(),
+                    false);
+            InteractionResult result = UseBlockCallback.EVENT.invoker().interact(
+                    player, player.level(), InteractionHand.MAIN_HAND, hitResult);
+            if (result == InteractionResult.FAIL) {
                 return 0;
             }
+
             try (Transaction transaction = Transaction.openOuter()) {
                 var playerInventory = PlayerInventoryStorage.of(player);
                 var totalExtracted = 0;
                 for (Direction value : Direction.values()) {
-                    Storage<ItemVariant> storage = ItemStorage.SIDED.find(entity.getLevel(), entity.getBlockPos(), entity.getBlockState(), entity, value);
-                    if (storage == null) continue;
-                    for (Iterator<StorageView<ItemVariant>> it = storage.iterator(); it.hasNext(); ) {
+                    Storage<ItemVariant> storage = ItemStorage.SIDED.find(entity.getLevel(), entity.getBlockPos(),
+                            entity.getBlockState(), entity, value);
+                    if (storage == null)
+                        continue;
+                    for (Iterator<StorageView<ItemVariant>> it = storage.iterator(); it.hasNext();) {
                         StorageView<ItemVariant> itemVariantStorageView = it.next();
                         ItemStack invStack = itemVariantStorageView.getResource().toStack();
                         if (!invStack.isEmpty() && PositionRequestMessage.compareItems(stack, invStack)) {
-                            var extracted = storage.extract(ItemVariant.of(stack.copy()), amount - totalExtracted, transaction);
+                            var extracted = storage.extract(ItemVariant.of(stack.copy()), amount - totalExtracted,
+                                    transaction);
                             playerInventory.offerOrDrop(ItemVariant.of(stack.copy()), extracted, transaction);
                             totalExtracted += extracted;
                             var level = player.level();
                             level.playSound(null, player.getX(), player.getY() + 0.5, player.getZ(),
-                                    SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.5F, ((level.random.nextFloat() - level.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
+                                    SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.5F,
+                                    ((level.random.nextFloat() - level.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
                         }
                         if (totalExtracted >= amount) {
                             break;

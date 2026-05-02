@@ -5,12 +5,11 @@ import com.buuz135.findme.client.ParticlePosition;
 import com.buuz135.findme.network.PositionRequestMessage;
 import com.buuz135.findme.network.PullItemRequestMessage;
 import com.mojang.blaze3d.platform.InputConstants;
-import dev.architectury.event.EventResult;
-import dev.architectury.event.events.client.ClientRawInputEvent;
-import dev.architectury.event.events.client.ClientTickEvent;
-import dev.architectury.event.events.client.ClientTooltipEvent;
-import dev.architectury.networking.NetworkManager;
-import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
+
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
@@ -31,33 +30,47 @@ public class FindMeModClient {
     public static long lastTooltipTime = 0;
     public static ItemStack lastRenderedStack = ItemStack.EMPTY;
 
+    public static boolean keySearchPressed = false;
+    public static boolean keyPullOnePressed = false;
+    public static boolean keyPullStackPressed = false;
+
     public FindMeModClient() {
         init();
     }
 
     private static void init() {
 
-        KeyMappingRegistry.register(KEY);
-        KeyMappingRegistry.register(PULL_ONE);
-        KeyMappingRegistry.register(PULL_STACK);
-        ClientTickEvent.CLIENT_PRE.register(instance -> ClientTickHandler.clientTick());
-        ClientTooltipEvent.ITEM.register((stack, lines, tooltipContext, flag) -> {
+        KeyBindingHelper.registerKeyBinding(KEY);
+        KeyBindingHelper.registerKeyBinding(PULL_ONE);
+        KeyBindingHelper.registerKeyBinding(PULL_STACK);
+        ClientTickEvents.START_CLIENT_TICK.register(client -> ClientTickHandler.clientTick());
+        ItemTooltipCallback.EVENT.register((stack, context,flag, lines) -> {
             if (!stack.isEmpty() && Minecraft.getInstance().level != null) {
                 lastRenderedStack = stack.copyWithCount(1);
                 lastTooltipTime = Minecraft.getInstance().level.getGameTime();
             }
         });
-        ClientRawInputEvent.KEY_PRESSED.register((client, keyCode, scanCode, action, modifiers) -> {
-            if (!lastRenderedStack.isEmpty() && client.level != null && client.level.getGameTime() - lastTooltipTime < 3) {
-                if (KEY.matches(keyCode, scanCode) && action == 1)
-                    NetworkManager.sendToServer(new PositionRequestMessage(lastRenderedStack));
-                if (PULL_ONE.matches(keyCode, scanCode) && action == 1)
-                    NetworkManager.sendToServer(new PullItemRequestMessage(lastRenderedStack, 1));
-                if (PULL_STACK.matches(keyCode, scanCode) && action == 1)
-                    NetworkManager.sendToServer(new PullItemRequestMessage(lastRenderedStack, lastRenderedStack.getMaxStackSize()));
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.level == null || client.player == null) return;
+            if (lastRenderedStack.isEmpty() || client.level.getGameTime() - lastTooltipTime >= 3) {
+                keySearchPressed = false;
+                keyPullOnePressed = false;
+                keyPullStackPressed = false;
+                return;
             }
-            return EventResult.pass();
-        });
+            if (keySearchPressed){
+                    keySearchPressed = false;
+                    ClientPlayNetworking.send(new PositionRequestMessage(lastRenderedStack));
+            }
+                if (keyPullOnePressed){
+                    keyPullOnePressed = false;
+                    ClientPlayNetworking.send(new PullItemRequestMessage(lastRenderedStack, 1));
+                }
+                if (keyPullStackPressed){
+                    keyPullStackPressed = false;
+                    ClientPlayNetworking.send(new PullItemRequestMessage(lastRenderedStack, lastRenderedStack.getMaxStackSize()));
+                }
+            });
         if (!RENDER_ORDER.contains(ParticlePosition.CUSTOM)) {
             RENDER_ORDER = new ArrayList<>(RENDER_ORDER);
             RENDER_ORDER.add(ParticlePosition.CUSTOM);

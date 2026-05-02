@@ -6,27 +6,22 @@ import com.buuz135.findme.network.PullItemRequestMessage;
 import com.buuz135.findme.particle.CustomParticleType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import dev.architectury.impl.NetworkAggregator;
-import dev.architectury.networking.NetworkManager;
-import dev.architectury.platform.Platform;
-import dev.architectury.registry.registries.DeferredRegister;
-import dev.architectury.registry.registries.RegistrySupplier;
-import dev.architectury.utils.Env;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.particles.ParticleType;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.resources.ResourceLocation;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.BiPredicate;
 
@@ -40,17 +35,17 @@ public class FindMeMod {
 
     public static List<BiPredicate<BlockEntity, ItemStack>> BLOCK_CHECKERS = new ArrayList<>();
     public static List<IInventoryPuller> BLOCK_EXTRACTORS = new ArrayList<>();
-    public static final DeferredRegister<ParticleType<?>> PARTICLES = DeferredRegister.create(FindMeMod.MOD_ID, Registries.PARTICLE_TYPE);
 
     public static CustomParticleType FIND_ME_PARTICLE_TYPE = new CustomParticleType(false);
-    public static RegistrySupplier<ParticleType<?>> FINDME = PARTICLES.register("particle", () -> FIND_ME_PARTICLE_TYPE);
+    public static ParticleType<?> FINDME;
 
     public static void init() {
-        PARTICLES.register();
-        registerC2S(PositionRequestMessage.TYPE, PositionRequestMessage.CODEC, PositionRequestMessage::handle);
-        registerS2C(PositionResponseMessage.TYPE, PositionResponseMessage.CODEC, PositionResponseMessage::handle);
-        registerC2S(PullItemRequestMessage.TYPE, PullItemRequestMessage.CODEC, PullItemRequestMessage::handle);
-        BLOCK_CHECKERS.add((blockEntity, itemStack) -> {
+        FINDME = Registry.register(BuiltInRegistries.PARTICLE_TYPE, ResourceLocation.fromNamespaceAndPath(MOD_ID, "particle"), FIND_ME_PARTICLE_TYPE);
+
+        PayloadTypeRegistry.playC2S().register(PositionRequestMessage.TYPE, PositionRequestMessage.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(PositionRequestMessage.TYPE, PositionRequestMessage::handle);
+        PayloadTypeRegistry.playS2C().register(PositionResponseMessage.TYPE, PositionResponseMessage.CODEC);        PayloadTypeRegistry.playC2S().register(PullItemRequestMessage.TYPE, PullItemRequestMessage.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(PullItemRequestMessage.TYPE, PullItemRequestMessage::handle);        BLOCK_CHECKERS.add((blockEntity, itemStack) -> {
             if (blockEntity instanceof Container inventory) {
                 if (inventory.isEmpty()) return false;
                 for (int i = 0; i < inventory.getContainerSize(); i++) {
@@ -62,7 +57,7 @@ public class FindMeMod {
             return false;
         });
 
-        File file = new File(Platform.getConfigFolder() + File.separator + MOD_ID + ".json");
+        File file = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json").toFile();
         if (!file.exists()) {
             createConfig(file);
         }
@@ -86,18 +81,6 @@ public class FindMeMod {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private static <T extends CustomPacketPayload> void registerS2C(CustomPacketPayload.Type<T> packetType, StreamCodec<? super RegistryFriendlyByteBuf, T> codec, NetworkManager.NetworkReceiver<T> receiver) {
-        if (Platform.getEnvironment().equals(Env.SERVER)) {
-            NetworkAggregator.registerS2CType(packetType, codec, List.of());
-        } else {
-            NetworkAggregator.registerReceiver(NetworkManager.s2c(), packetType, codec, Collections.emptyList(), receiver);
-        }
-    }
-
-    private static <T extends CustomPacketPayload> void registerC2S(CustomPacketPayload.Type<T> packetType, StreamCodec<? super RegistryFriendlyByteBuf, T> codec, NetworkManager.NetworkReceiver<T> receiver) {
-        NetworkAggregator.registerReceiver(NetworkManager.c2s(), packetType, codec, Collections.emptyList(), receiver);
     }
 
 }
