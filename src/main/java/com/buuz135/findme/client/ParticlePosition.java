@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.util.Mth;
 import net.minecraft.util.TriState;
-import net.minecraft.client.renderer.RenderStateShard;
 
 
 import java.awt.*;
