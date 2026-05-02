@@ -31,7 +31,7 @@ public class ParticlePosition extends SingleQuadParticle {
         .setShaderState(RenderStateShard.PARTICLE_SHADER)
         .setTextureState(new RenderStateShard.TextureStateShard(
             ResourceLocation.withDefaultNamespace("textures/particle/glitter_4.png"),
-            TriState.FALSE, false
+            false
         ))
         .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
         .setLightmapState(RenderStateShard.LIGHTMAP)

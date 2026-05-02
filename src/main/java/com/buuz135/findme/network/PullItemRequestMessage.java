@@ -23,12 +23,12 @@ public class PullItemRequestMessage implements CustomPacketPayload {
     public static StreamCodec<? super RegistryFriendlyByteBuf, PullItemRequestMessage> CODEC = new StreamCodec<>() {
         @Override
         public PullItemRequestMessage decode(RegistryFriendlyByteBuf object) {
-            return new PullItemRequestMessage(ItemStack.parseOptional(object.registryAccess(), Objects.requireNonNull(object.readNbt())), object.readInt());
+            return new PullItemRequestMessage(ItemStack.OPTIONAL_STREAM_CODEC.decode(object), object.readInt());
         }
 
         @Override
         public void encode(RegistryFriendlyByteBuf registryFriendlyByteBuf, PullItemRequestMessage positionRequestMessage) {
-            registryFriendlyByteBuf.writeNbt(positionRequestMessage.stack.saveOptional(registryFriendlyByteBuf.registryAccess()));
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(registryFriendlyByteBuf, positionRequestMessage.stack);
             registryFriendlyByteBuf.writeInt(positionRequestMessage.amount);
         }
     };
@@ -53,7 +53,7 @@ public class PullItemRequestMessage implements CustomPacketPayload {
     }
 
     public void handle(ServerPlayNetworking.Context context) {
-        context.player().server.execute(() -> {
+        context.server().execute(() -> {
             AABB box = new AABB(context.player().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
             var currentAmount = 0;
             for (BlockPos blockPos : PositionRequestMessage.getBlockPosInAABB(box)) {

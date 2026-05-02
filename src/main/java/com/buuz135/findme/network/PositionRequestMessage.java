@@ -17,7 +17,6 @@ import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class PositionRequestMessage implements CustomPacketPayload {
 
@@ -25,12 +24,12 @@ public class PositionRequestMessage implements CustomPacketPayload {
     public static StreamCodec<? super RegistryFriendlyByteBuf, PositionRequestMessage> CODEC = new StreamCodec<>() {
         @Override
         public PositionRequestMessage decode(RegistryFriendlyByteBuf object) {
-            return new PositionRequestMessage(ItemStack.parseOptional(object.registryAccess(), Objects.requireNonNull(object.readNbt())));
+            return new PositionRequestMessage(ItemStack.OPTIONAL_STREAM_CODEC.decode(object));
         }
 
         @Override
         public void encode(RegistryFriendlyByteBuf registryFriendlyByteBuf, PositionRequestMessage positionRequestMessage) {
-            registryFriendlyByteBuf.writeNbt(positionRequestMessage.stack.saveOptional(registryFriendlyByteBuf.registryAccess()));
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(registryFriendlyByteBuf, positionRequestMessage.stack);
         }
     };
 
@@ -63,7 +62,7 @@ public class PositionRequestMessage implements CustomPacketPayload {
     }
 
     public void handle(ServerPlayNetworking.Context context) {
-        context.player().server.execute(() -> {
+        context.server().execute(() -> {
             AABB box = new AABB(context.player().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
             List<BlockPos> blockPosList = new ArrayList<>();
             for (BlockPos blockPos : getBlockPosInAABB(box)) {
