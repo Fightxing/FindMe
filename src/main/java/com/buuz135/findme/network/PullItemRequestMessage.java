@@ -15,7 +15,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 
-import java.util.Objects;
 
 public class PullItemRequestMessage implements CustomPacketPayload {
 
