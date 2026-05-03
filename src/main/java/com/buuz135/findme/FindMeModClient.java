@@ -11,10 +11,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
-import net.minecraft.client.particle.ParticleProvider;
-import net.minecraft.client.particle.SpriteSet;
-import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
@@ -58,27 +54,13 @@ public class FindMeModClient {
                 lastTooltipTime = Minecraft.getInstance().level.getGameTime();
             }
         });
-        
-        ParticleFactoryRegistry.getInstance().register(
-            FindMeMod.FIND_ME_PARTICLE_TYPE,
-            new ParticleProvider<>() {
-                @Override
-                public net.minecraft.client.particle.Particle createParticle(
-                        net.minecraft.core.particles.ParticleOptions particleOptions,
-                        net.minecraft.client.multiplayer.ClientLevel level,
-                        double x, double y, double z,
-                        double xSpeed, double ySpeed, double zSpeed) {
-                    // 从粒子图集获取精灵图
-                    TextureAtlasSprite sprite = Minecraft.getInstance()
-                        .getAtlasManager()
-                        .getAtlasOrThrow(TextureAtlas.LOCATION_PARTICLES)
-                        .getSprite(Identifier.withDefaultNamespace("particle/glitter_4"));
-                    return new ParticlePosition(level, x, y, z, xSpeed, ySpeed, zSpeed, sprite);
-                }
-            }
-        );
 
-
+    ParticleFactoryRegistry.getInstance().register(
+        FindMeMod.FIND_ME_PARTICLE_TYPE,
+        (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) -> {
+            return new ParticlePosition(clientLevel, d, e, f, g, h, i);
+        }
+    );
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.level == null || client.player == null) return;

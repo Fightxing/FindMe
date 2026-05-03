@@ -23,13 +23,11 @@ public class MixinKeyboardHandler {
      * 仅处理按下事件（action == GLFW_PRESS），且只响应 Minecraft 主窗口的按键。
      *
      * @param windowPointer GLFW 窗口指针
-     * @param key           GLFW 键码
-     * @param scanCode      平台相关扫描码
      * @param action        动作：0=释放, 1=按下, 2=重复
-     * @param modifiers     修饰键位掩码
+     * @param keyEvent      封装了 key、scancode、modifiers 的按键事件
      */
     @Inject(method = "keyPress", at = @At("HEAD"))
-    private void findme_onKeyPress(long windowPointer, int key, int scanCode, int action, int modifiers, CallbackInfo ci) {
+    private void findme_onKeyPress(long windowPointer, int action, KeyEvent keyEvent, CallbackInfo ci) {
         // 只处理按下事件（GLFW_PRESS = 1），忽略释放和重复
         if (action != 1) return;
 
@@ -40,10 +38,10 @@ public class MixinKeyboardHandler {
                 return;
             }
         }
-        KeyEvent keyEvent = new KeyEvent(key, scanCode, modifiers);
+        // keyEvent 现在是方法参数直接提供的，无需手动构造
         if (FindMeModClient.KEY.matches(keyEvent)) {
             FindMeModClient.keySearchPressed = true;
-        }   
+        }
         if (FindMeModClient.PULL_ONE.matches(keyEvent)) {
             FindMeModClient.keyPullOnePressed = true;
         }

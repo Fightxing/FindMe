@@ -7,12 +7,11 @@ import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
@@ -39,19 +38,21 @@ public class ParticlePosition extends SingleQuadParticle {
     // ========== 2. Layer：定义粒子所属图层 ==========
     private static final Layer FINDME_LAYER = new Layer(
         true,                            // translucent = true（半透明）
-        TextureAtlas.LOCATION_PARTICLES, // 粒子图集
+        Identifier.withDefaultNamespace("particles"), // 粒子图集
         FINDME_PARTICLE_PIPELINE         // 自定义管线
     );
 
     // ========== 3. ParticleRenderType（新版 record） ==========
-    public static final ParticleRenderType CUSTOM = new ParticleRenderType("CUSTOM2");
+    public static final ParticleRenderType CUSTOM = new ParticleRenderType("custom2");
 
     // ========== 4. 构造器（使用 5 参版本，手动设置速度） ==========
     public ParticlePosition(ClientLevel world, double x, double y, double z,
-                            double motionX, double motionY, double motionZ,
-                            TextureAtlasSprite sprite) {
+                            double motionX, double motionY, double motionZ) {
         // 5 参构造器：仅位置 + 精灵图，速度由父类设为 0
-        super(world, x, y, z, sprite);
+        super(world, x, y, z,
+              Minecraft.getInstance().getAtlasManager()
+                  .getAtlasOrThrow(Identifier.withDefaultNamespace("particles"))
+                  .getSprite(Identifier.withDefaultNamespace("particle/glitter_4")));
         // 原逻辑：xd *= 0.1（=0）后 += motion → 直接赋值为 motion
         this.xd = motionX;
         this.yd = motionY;
