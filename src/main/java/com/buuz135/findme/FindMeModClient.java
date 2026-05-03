@@ -13,6 +13,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.Identifier;
 
@@ -35,8 +37,6 @@ public class FindMeModClient {
     public static boolean keyPullOnePressed = false;
     public static boolean keyPullStackPressed = false;
 
-    private static boolean deferredInitDone = false;
-
     public FindMeModClient() {
         init();
     }
@@ -45,10 +45,8 @@ public class FindMeModClient {
         KeyBindingHelper.registerKeyBinding(KEY);
         KeyBindingHelper.registerKeyBinding(PULL_ONE);
         KeyBindingHelper.registerKeyBinding(PULL_STACK);
-        ClientTickEvents.START_CLIENT_TICK.register(client -> {
-            ClientTickHandler.clientTick();
-            runDeferredInit(client);
-        });
+        ClientTickEvents.START_CLIENT_TICK.register(client -> ClientTickHandler.clientTick());
+
         ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> {
             if (!stack.isEmpty() && Minecraft.getInstance().level != null) {
                 lastRenderedStack = stack.copyWithCount(1);
@@ -56,8 +54,46 @@ public class FindMeModClient {
             }
         });
 
+        ParticleFactoryRegistry.getInstance().register(
+            FindMeMod.FIND_ME_PARTICLE_TYPE,
+            (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) -> {
+                FindMeMod.LOGGER.info("[FindMe Debug] Particle factory called: type={}, pos=({}, {}, {})",
+                    particleOptions.getClass().getSimpleName(),
+                    String.format("%.2f", d), String.format("%.2f", e), String.format("%.2f", f));
+                return new ParticlePosition(clientLevel, d, e, f, g, h, i);
+            }
+        );
+        FindMeMod.LOGGER.info("[FindMe Debug] Particle factory registered for type: {}",
+            BuiltInRegistries.PARTICLE_TYPE.getKey(FindMeMod.FIND_ME_PARTICLE_TYPE));
+
+        if (!RENDER_ORDER.contains(ParticlePosition.CUSTOM)) {
+            RENDER_ORDER = new ArrayList<>(RENDER_ORDER);
+            RENDER_ORDER.add(ParticlePosition.CUSTOM);
+            FindMeMod.LOGGER.info("[FindMe Debug] CUSTOM added to RENDER_ORDER. New size={}",
+                RENDER_ORDER.size());
+        } else {
+            FindMeMod.LOGGER.info("[FindMe Debug] CUSTOM already in RENDER_ORDER. Size={}",
+                RENDER_ORDER.size());
+        }
+
+        // 粒子图集会在资源重载时自动加载，无需手动预加载
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.level == null || client.player == null) return;
+
+            // ========== 调试：每 20 tick 在玩家头顶生成测试粒子 ==========
+            if (client.level.getGameTime() % 20 == 0) {
+                var pos = client.player.blockPosition();
+                var testParticle = new ParticlePosition(
+                    (ClientLevel) client.level,
+                    pos.getX() + 0.5, pos.getY() + 3.0, pos.getZ() + 0.5,
+                    0, 0.02, 0  // 轻微上浮
+                );
+                client.particleEngine.add(testParticle);
+                FindMeMod.LOGGER.info("[FindMe Debug] Test particle spawned at player head +3Y. GameTime={}",
+                    client.level.getGameTime());
+            }
+
             if (lastRenderedStack.isEmpty() || client.level.getGameTime() - lastTooltipTime >= 3) {
                 keySearchPressed = false;
                 keyPullOnePressed = false;
@@ -77,27 +113,5 @@ public class FindMeModClient {
                 ClientPlayNetworking.send(new PullItemRequestMessage(lastRenderedStack, lastRenderedStack.getMaxStackSize()));
             }
         });
-    }
-
-    private static void runDeferredInit(Minecraft client) {
-        if (deferredInitDone) return;
-        if (client.getTextureManager() == null) return;
-        deferredInitDone = true;
-
-        // 预加载粒子图集，防止渲染通道内延迟加载导致 Frame Graph 崩溃
-        client.getTextureManager().getTexture(Identifier.withDefaultNamespace("particles"));
-
-        // 注册粒子工厂（移至此阶段确保 TextureManager 已就绪）
-        ParticleFactoryRegistry.getInstance().register(
-            FindMeMod.FIND_ME_PARTICLE_TYPE,
-            (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) ->
-                new ParticlePosition(clientLevel, d, e, f, g, h, i)
-        );
-
-        // 注册自定义粒子渲染层
-        if (!RENDER_ORDER.contains(ParticlePosition.CUSTOM)) {
-            RENDER_ORDER = new ArrayList<>(RENDER_ORDER);
-            RENDER_ORDER.add(ParticlePosition.CUSTOM);
-        }
     }
 }

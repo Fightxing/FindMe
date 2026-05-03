@@ -16,6 +16,8 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.resources.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
@@ -29,6 +31,7 @@ import java.util.function.BiPredicate;
 public class FindMeMod {
 
     public static final String MOD_ID = "findme";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 
     public static FindMeConfig CONFIG = new FindMeConfig();
@@ -41,6 +44,8 @@ public class FindMeMod {
 
     public static void init() {
         FINDME = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MOD_ID, "particle"), FIND_ME_PARTICLE_TYPE);
+        LOGGER.info("[FindMe Debug] Particle type registered: id={}, class={}", 
+            BuiltInRegistries.PARTICLE_TYPE.getKey(FINDME), FINDME.getClass().getName());
 
         PayloadTypeRegistry.playC2S().register(PositionRequestMessage.TYPE, PositionRequestMessage.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(PositionRequestMessage.TYPE, PositionRequestMessage::handle);
