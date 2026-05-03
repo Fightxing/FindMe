@@ -1,5 +1,5 @@
 plugins {
-    id "fabric-loom" version "1.16-SNAPSHOT"
+    id "net.fabricmc.fabric-loom" version "1.16-SNAPSHOT"
     id "com.gradleup.shadow" version "9.4.1"
     id "java"
     id "maven-publish"
@@ -21,22 +21,20 @@ configurations {
 
 dependencies {
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-    mappings loom.officialMojangMappings()
 
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
-    // Remove the next line if you don't want to depend on the API
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
 base.archivesName = rootProject.archives_base_name
 version = rootProject.mod_version
 group = rootProject.maven_group
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
-    options.release = 21
+    options.release = 25
 }
 
 java {
@@ -51,20 +49,16 @@ processResources {
     }
 }
 
-shadowJar {
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier.set("dev-shadow")
-}
-
-remapJar {
-    inputFile.set shadowJar.archiveFile
-    dependsOn shadowJar
-    archiveClassifier.set("fabric")
-}
 
 jar {
-    archiveClassifier.set("dev")
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName"}
+	}
 }
+
 
 components.java {
     withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
@@ -77,16 +71,13 @@ publishing {
         mavenFabric(MavenPublication) {
             artifactId = rootProject.archives_base_name + "-fabric"
             // add all the jars that should be included when publishing to maven
-            artifact(remapJar) {
+            artifact(jar) {
                 classifier null
-            }
-            artifact(sourcesJar) {
-                builtBy remapSourcesJar
             }
         }
     }
+}
 
     repositories {
         // Add repositories to publish to here.
     }
-}

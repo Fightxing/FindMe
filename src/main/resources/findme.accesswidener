@@ -1,4 +1,4 @@
-accessWidener	v1	named
+accessWidener	v2	official
 
 mutable field net/minecraft/client/particle/ParticleEngine RENDER_ORDER Ljava/util/List;
 accessible field net/minecraft/client/particle/ParticleEngine RENDER_ORDER Ljava/util/List;
