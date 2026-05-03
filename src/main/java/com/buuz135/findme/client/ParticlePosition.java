@@ -1,9 +1,13 @@
 package com.buuz135.findme.client;
 
 import com.buuz135.findme.FindMeMod;
-import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+
+import java.util.Optional;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Camera;
@@ -12,7 +16,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.state.QuadParticleRenderState;
+import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
@@ -29,10 +33,9 @@ public class ParticlePosition extends SingleQuadParticle {
     static {
         FINDME_PIPELINE = RenderPipeline.builder(RenderPipelines.PARTICLE_SNIPPET)
             .withLocation(Identifier.fromNamespaceAndPath("findme", "pipeline/particle"))
-            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-            .withBlend(BlendFunction.TRANSLUCENT)
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false, 0f, 0f))
+            .withColorTargetState(new ColorTargetState(Optional.of(BlendFunction.TRANSLUCENT), 15))
             .withCull(false)
-            .withDepthWrite(false)
             .build();
     }
 
@@ -98,7 +101,7 @@ public class ParticlePosition extends SingleQuadParticle {
     }
 
     @Override
-    protected int getLightColor(float partialTicks) {
+    protected int getLightCoords(float partialTicks) {
         return 15728880;
     }
 

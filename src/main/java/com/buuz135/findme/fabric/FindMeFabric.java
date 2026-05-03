@@ -26,7 +26,7 @@ public class FindMeFabric implements ModInitializer {
     public void onInitialize() {
         FindMeMod.init();
         FindMeMod.BLOCK_CHECKERS.add((blockEntity, stack) -> {
-            try (Transaction transaction = Transaction.openOuter()) {
+            try (Transaction ignored = Transaction.openOuter()) {
                 for (Direction value : Direction.values()) {
                     Storage<ItemVariant> storage = ItemStorage.SIDED.find(blockEntity.getLevel(),
                             blockEntity.getBlockPos(), blockEntity.getBlockState(), blockEntity, value);
@@ -74,7 +74,7 @@ public class FindMeFabric implements ModInitializer {
                             var level = player.level();
                             level.playSound(null, player.getX(), player.getY() + 0.5, player.getZ(),
                                     SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.5F,
-                                    ((level.random.nextFloat() - level.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
+                                    ((level.getRandom().nextFloat() - level.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F);
                         }
                         if (totalExtracted >= amount) {
                             break;

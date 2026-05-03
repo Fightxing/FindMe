@@ -73,7 +73,7 @@ public class PullItemRequestMessage implements CustomPacketPayload {
                 var player = context.player();
                 var level = player.level();
                 level.playSound(null, player.getX(), player.getY() + 0.5, player.getZ(),
-                        SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.5F, ((level.random.nextFloat() - level.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
+                        SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.5F, ((level.getRandom().nextFloat() - level.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F);
             }
         });
         //context.player().setPacketHandled(true);

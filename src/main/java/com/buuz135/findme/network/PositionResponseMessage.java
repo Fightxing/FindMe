@@ -76,11 +76,10 @@ public class PositionResponseMessage implements CustomPacketPayload {
         Minecraft.getInstance().particleEngine.add(
             new ParticlePosition(
                 Minecraft.getInstance().level, 
-                position.getX() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 
-                position.getY() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 
-                position.getZ() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 
+                position.getX() + 0.75 - Minecraft.getInstance().player.level().getRandom().nextDouble() / 2D, 
+                position.getY() + 0.75 - Minecraft.getInstance().player.level().getRandom().nextDouble() / 2D, 
+                position.getZ() + 0.75 - Minecraft.getInstance().player.level().getRandom().nextDouble() / 2D, 
                 0, 0, 0));
-        //Minecraft.getInstance().particleEngine.add(new AshParticle((ClientLevel) Minecraft.getInstance().player.level(), position.getX() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 1 + position.getY() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, position.getZ() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 0, 0, 0));
     }
 
     @Override

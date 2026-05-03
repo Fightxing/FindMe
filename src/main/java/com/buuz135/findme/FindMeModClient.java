@@ -6,19 +6,18 @@ import com.buuz135.findme.network.PositionRequestMessage;
 import com.buuz135.findme.network.PullItemRequestMessage;
 import com.mojang.blaze3d.platform.InputConstants;
 
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
+import net.fabricmc.fabric.api.client.particle.v1.ParticleGroupRegistry;
+import net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.QuadParticleGroup;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.Identifier;
 
-import java.util.ArrayList;
-
-import static net.minecraft.client.particle.ParticleEngine.RENDER_ORDER;
 
 public class FindMeModClient {
 
@@ -40,9 +39,9 @@ public class FindMeModClient {
     }
 
     private static void init() {
-        KeyBindingHelper.registerKeyBinding(KEY);
-        KeyBindingHelper.registerKeyBinding(PULL_ONE);
-        KeyBindingHelper.registerKeyBinding(PULL_STACK);
+        KeyMappingHelper.registerKeyMapping(KEY);
+        KeyMappingHelper.registerKeyMapping(PULL_ONE);
+        KeyMappingHelper.registerKeyMapping(PULL_STACK);
         ClientTickEvents.START_CLIENT_TICK.register(client -> ClientTickHandler.clientTick());
 
         ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> {
@@ -52,16 +51,14 @@ public class FindMeModClient {
             }
         });
 
-        ParticleFactoryRegistry.getInstance().register(
+        ParticleProviderRegistry.getInstance().register(
             FindMeMod.FIND_ME_PARTICLE_TYPE,
             (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) ->
                 new ParticlePosition(clientLevel, d, e, f, g, h, i)
         );
 
-        if (!RENDER_ORDER.contains(ParticlePosition.CUSTOM)) {
-            RENDER_ORDER = new ArrayList<>(RENDER_ORDER);
-            RENDER_ORDER.add(ParticlePosition.CUSTOM);
-        }
+        ParticleGroupRegistry.register(ParticlePosition.CUSTOM,
+            engine -> new QuadParticleGroup(engine, ParticlePosition.CUSTOM));
 
         // 粒子图集会在资源重载时自动加载，无需手动预加载
 

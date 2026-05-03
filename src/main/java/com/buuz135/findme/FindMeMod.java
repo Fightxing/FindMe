@@ -45,10 +45,12 @@ public class FindMeMod {
     public static void init() {
         FINDME = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MOD_ID, "particle"), FIND_ME_PARTICLE_TYPE);
 
-        PayloadTypeRegistry.playC2S().register(PositionRequestMessage.TYPE, PositionRequestMessage.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(PositionRequestMessage.TYPE, PositionRequestMessage.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(PositionRequestMessage.TYPE, PositionRequestMessage::handle);
-        PayloadTypeRegistry.playS2C().register(PositionResponseMessage.TYPE, PositionResponseMessage.CODEC);        PayloadTypeRegistry.playC2S().register(PullItemRequestMessage.TYPE, PullItemRequestMessage.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(PullItemRequestMessage.TYPE, PullItemRequestMessage::handle);        BLOCK_CHECKERS.add((blockEntity, itemStack) -> {
+        PayloadTypeRegistry.clientboundPlay().register(PositionResponseMessage.TYPE, PositionResponseMessage.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(PullItemRequestMessage.TYPE, PullItemRequestMessage.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(PullItemRequestMessage.TYPE, PullItemRequestMessage::handle);
+        BLOCK_CHECKERS.add((blockEntity, itemStack) -> {
             if (blockEntity instanceof Container inventory) {
                 if (inventory.isEmpty()) return false;
                 for (int i = 0; i < inventory.getContainerSize(); i++) {
