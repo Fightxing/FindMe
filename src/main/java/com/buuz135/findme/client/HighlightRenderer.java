@@ -81,7 +81,7 @@ public class HighlightRenderer {
 
         // Rotation angle matching item entity's natural spin (~3 degrees per tick)
         float age = (float) item.getAge() + partialTick;
-        float angle = age * 0.0523598776f; // 3 degrees in radians
+        float angle = -age * 0.0523598776f; // 3 degrees in radians, negated to match item spin
 
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
