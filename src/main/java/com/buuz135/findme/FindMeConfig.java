@@ -50,6 +50,7 @@ public class FindMeConfig {
         public int RADIUS_RANGE = 8;
         public boolean IGNORE_ITEM_DAMAGE = false;
         public boolean SEARCH_ITEM_ENTITIES = true;
+        public boolean SEARCH_ENTITY_INVENTORIES = true;
 
     }
 }

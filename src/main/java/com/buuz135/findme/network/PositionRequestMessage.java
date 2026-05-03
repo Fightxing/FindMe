@@ -10,8 +10,13 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.npc.InventoryCarrier;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.Container;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 
@@ -76,6 +81,48 @@ public class PositionRequestMessage implements CustomPacketPayload {
                 for (ItemEntity itemEntity : context.player().level().getEntitiesOfClass(ItemEntity.class, box)) {
                     if (compareItems(stack, itemEntity.getItem())) {
                         blockPosList.add(itemEntity.blockPosition());
+                    }
+                }
+            }
+            if (FindMeMod.CONFIG.COMMON.SEARCH_ENTITY_INVENTORIES) {
+                for (Entity entity : context.player().level().getEntitiesOfClass(Entity.class, box)) {
+                    if (entity == context.player()) continue;
+                    boolean found = false;
+                    if (entity instanceof Container container) {
+                        for (int i = 0; i < container.getContainerSize(); i++) {
+                            if (!container.getItem(i).isEmpty() && compareItems(stack, container.getItem(i))) {
+                                blockPosList.add(entity.blockPosition());
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found && entity instanceof InventoryCarrier carrier) {
+                        Container inv = carrier.getInventory();
+                        for (int i = 0; i < inv.getContainerSize(); i++) {
+                            if (!inv.getItem(i).isEmpty() && compareItems(stack, inv.getItem(i))) {
+                                blockPosList.add(entity.blockPosition());
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found && entity instanceof LivingEntity livingEntity) {
+                        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND}) {
+                            if (compareItems(stack, livingEntity.getItemBySlot(slot))) {
+                                blockPosList.add(entity.blockPosition());
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}) {
+                                if (compareItems(stack, livingEntity.getItemBySlot(slot))) {
+                                    blockPosList.add(entity.blockPosition());
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             }
