@@ -51,15 +51,18 @@ public class PullItemRequestMessage implements CustomPacketPayload {
         return ItemStack.isSameItemSameComponents(first, second);
     }
 
+    @SuppressWarnings("null")
     public void handle(ServerPlayNetworking.Context context) {
+        var player = context.player();
+        var level = player.level();
         context.server().execute(() -> {
-            AABB box = new AABB(context.player().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
+            AABB box = new AABB(player.blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
             var currentAmount = 0;
             for (BlockPos blockPos : PositionRequestMessage.getBlockPosInAABB(box)) {
-                BlockEntity tileEntity = context.player().level().getBlockEntity(blockPos);
+                BlockEntity tileEntity = level.getBlockEntity(blockPos);
                 if (tileEntity != null) {
                     for (IInventoryPuller blockExtractor : FindMeMod.BLOCK_EXTRACTORS) {
-                        currentAmount += blockExtractor.pull(tileEntity, stack, amount - currentAmount, context.player());
+                        currentAmount += blockExtractor.pull(tileEntity, stack, amount - currentAmount, player);
                         if (currentAmount >= amount) {
                             break;
                         }
@@ -70,8 +73,6 @@ public class PullItemRequestMessage implements CustomPacketPayload {
                 }
             }
             if (currentAmount < amount) {
-                var player = context.player();
-                var level = player.level();
                 level.playSound(null, player.getX(), player.getY() + 0.5, player.getZ(),
                         SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.5F, ((level.getRandom().nextFloat() - level.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F);
             }
@@ -79,6 +80,7 @@ public class PullItemRequestMessage implements CustomPacketPayload {
         //context.player().setPacketHandled(true);
     }
 
+    @SuppressWarnings("null")
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;

@@ -21,6 +21,7 @@ public class PositionResponseMessage implements CustomPacketPayload {
     public static CustomPacketPayload.Type<PositionResponseMessage> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(FindMeMod.MOD_ID, "position_response"));
     public static StreamCodec<? super RegistryFriendlyByteBuf, PositionResponseMessage> CODEC = new StreamCodec<>() {
         @Override
+        @SuppressWarnings("null")
         public PositionResponseMessage decode(RegistryFriendlyByteBuf buf) {
             List<BlockPos> blockPositions = new ArrayList<>();
             int blockCount = buf.readInt();
@@ -41,6 +42,7 @@ public class PositionResponseMessage implements CustomPacketPayload {
         }
 
         @Override
+        @SuppressWarnings("null")
         public void encode(RegistryFriendlyByteBuf buf, PositionResponseMessage msg) {
             buf.writeInt(msg.blockPositions.size());
             for (BlockPos pos : msg.blockPositions) {
@@ -75,10 +77,15 @@ public class PositionResponseMessage implements CustomPacketPayload {
 
     public void handle(ClientPlayNetworking.Context context) {
         Minecraft.getInstance().execute(() -> {
+            var mc = Minecraft.getInstance();
+            var player = mc.player;
+            var level = mc.level;
+            if (player == null || level == null) return;
+
             int total = blockPositions.size() + itemEntityIds.size() + entityIds.size();
             if (total > 0) {
-                Minecraft.getInstance().player.closeContainer();
-                Minecraft.getInstance().player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+                player.closeContainer();
+                player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
 
                 int duration = FindMeMod.CONFIG.CLIENT.LASER_DURATION;
                 for (BlockPos pos : blockPositions) {
@@ -92,8 +99,7 @@ public class PositionResponseMessage implements CustomPacketPayload {
                 }
 
                 if (FindMeMod.CONFIG.CLIENT.SNAP_TO_CONTAINER && total > 0) {
-                    var level = Minecraft.getInstance().level;
-                    Vec3 eyePos = Minecraft.getInstance().player.getEyePosition();
+                    Vec3 eyePos = player.getEyePosition();
                     double nearestDistance = Double.MAX_VALUE;
                     Vec3 targetPos = null;
 
@@ -138,14 +144,15 @@ public class PositionResponseMessage implements CustomPacketPayload {
                         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
                         float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
 
-                        Minecraft.getInstance().player.setYRot(yaw);
-                        Minecraft.getInstance().player.setXRot(pitch);
+                        player.setYRot(yaw);
+                        player.setXRot(pitch);
                     }
                 }
             }
         });
     }
 
+    @SuppressWarnings("null")
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;

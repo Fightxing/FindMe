@@ -5,6 +5,7 @@ import com.buuz135.findme.tracking.HighlightCache;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
@@ -54,14 +55,16 @@ public class HighlightRenderer {
     }
 
     private static void renderBlockHighlight(HighlightCache.Entry entry, int alpha, boolean alwaysOnTop) {
-        if (entry.getBlockPos() == null) return;
+        BlockPos pos = entry.getBlockPos();
+        if (pos == null) return;
         Color c = FindMeMod.CONFIG.CLIENT.getBlockLaserColor();
         int color = (alpha << 24) | (c.getRed() << 16) | (c.getGreen() << 8) | c.getBlue();
         float width = LINE_WIDTH * FindMeMod.CONFIG.CLIENT.LASER_WIDTH;
-        var gizmo = cuboid(entry.getBlockPos(), stroke(color, width));
+        var gizmo = cuboid(pos, stroke(color, width));
         if (alwaysOnTop) gizmo.setAlwaysOnTop();
     }
 
+    @SuppressWarnings("null")
     private static void renderItemEntityHighlight(HighlightCache.Entry entry, int alpha,
                                                    net.minecraft.client.multiplayer.ClientLevel level,
                                                    float partialTick, boolean alwaysOnTop) {

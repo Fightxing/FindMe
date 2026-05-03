@@ -4,7 +4,6 @@ import com.buuz135.findme.FindMeMod;
 import com.buuz135.findme.tracking.TrackingList;
 
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -67,28 +66,31 @@ public class PositionRequestMessage implements CustomPacketPayload {
         return ItemStack.isSameItemSameComponents(first, second);
     }
 
+    @SuppressWarnings("null")
     public void handle(ServerPlayNetworking.Context context) {
+        var player = context.player();
+        var level = player.level();
         context.server().execute(() -> {
-            AABB box = new AABB(context.player().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
+            AABB box = new AABB(player.blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
             List<BlockPos> blockPosList = new ArrayList<>();
             List<Integer> itemEntityIds = new ArrayList<>();
             List<Integer> entityIds = new ArrayList<>();
             for (BlockPos blockPos : getBlockPosInAABB(box)) {
-                BlockEntity tileEntity = context.player().level().getBlockEntity(blockPos);
+                BlockEntity tileEntity = level.getBlockEntity(blockPos);
                 if (tileEntity != null && FindMeMod.BLOCK_CHECKERS.stream().anyMatch(predicate -> predicate.test(tileEntity, stack))) {
                     blockPosList.add(blockPos);
                 }
             }
             if (FindMeMod.CONFIG.COMMON.SEARCH_ITEM_ENTITIES) {
-                for (ItemEntity itemEntity : context.player().level().getEntitiesOfClass(ItemEntity.class, box)) {
+                for (ItemEntity itemEntity : level.getEntitiesOfClass(ItemEntity.class, box)) {
                     if (compareItems(stack, itemEntity.getItem())) {
                         itemEntityIds.add(itemEntity.getId());
                     }
                 }
             }
             if (FindMeMod.CONFIG.COMMON.SEARCH_ENTITY_INVENTORIES) {
-                for (Entity entity : context.player().level().getEntitiesOfClass(Entity.class, box)) {
-                    if (entity == context.player()) continue;
+                for (Entity entity : level.getEntitiesOfClass(Entity.class, box)) {
+                    if (entity == player) continue;
                     boolean found = false;
                     if (entity instanceof Container container) {
                         for (int i = 0; i < container.getContainerSize(); i++) {
@@ -129,7 +131,7 @@ public class PositionRequestMessage implements CustomPacketPayload {
                 }
             }
             if (!blockPosList.isEmpty() || !itemEntityIds.isEmpty() || !entityIds.isEmpty()) {
-                ServerPlayNetworking.send((ServerPlayer) context.player(), new PositionResponseMessage(blockPosList, itemEntityIds, entityIds));
+                ServerPlayNetworking.send(player, new PositionResponseMessage(blockPosList, itemEntityIds, entityIds));
             }
 
 

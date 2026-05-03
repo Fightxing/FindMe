@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 public class FindMeClientFabric implements ClientModInitializer {
     @Override
+    @SuppressWarnings("null")
     public void onInitializeClient() {
         new FindMeModClient();
         ClientPlayNetworking.registerGlobalReceiver(PositionResponseMessage.TYPE, PositionResponseMessage::handle);

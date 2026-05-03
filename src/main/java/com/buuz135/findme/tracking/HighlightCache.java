@@ -72,7 +72,8 @@ public class HighlightCache {
             if (level != null) {
                 switch (entry.getType()) {
                     case BLOCK -> {
-                        if (entry.getBlockPos() != null && level.getBlockState(entry.getBlockPos()).isAir()) {
+                        BlockPos pos = entry.getBlockPos();
+                        if (pos != null && level.getBlockState(pos).isAir()) {
                             iterator.remove();
                         }
                     }
