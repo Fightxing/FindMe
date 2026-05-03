@@ -55,10 +55,6 @@ public class PositionResponseMessage implements CustomPacketPayload {
 
     public void handle(ClientPlayNetworking.Context context) {
         Minecraft.getInstance().execute(() -> {
-            FindMeMod.LOGGER.info("[FindMe Debug] PositionResponse received: {} positions, level={}, player={}",
-                positions.size(),
-                Minecraft.getInstance().level != null,
-                Minecraft.getInstance().player != null);
             if (positions.size() > 0) {
                 Minecraft.getInstance().player.closeContainer();
                 Minecraft.getInstance().player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
@@ -66,15 +62,10 @@ public class PositionResponseMessage implements CustomPacketPayload {
                     TrackingList.beginTracking();
                     ClientTickHandler.addRunnable(TrackingList::clear, FindMeMod.CONFIG.CLIENT.CONTAINER_TRACK_TIME);
                 }
-                FindMeMod.LOGGER.info("[FindMe Debug] Spawning particles for {} positions...", positions.size());
                 for (BlockPos position : positions) {
                     for (int i = 0; i < 2; ++i)
                         addParticle(position);
                 }
-                FindMeMod.LOGGER.info("[FindMe Debug] Done spawning particles. Engine exists: {}",
-                    Minecraft.getInstance().particleEngine != null);
-            } else {
-                FindMeMod.LOGGER.info("[FindMe Debug] No positions to highlight (empty result)");
             }
         });
         //context.get().setPacketHandled(true);

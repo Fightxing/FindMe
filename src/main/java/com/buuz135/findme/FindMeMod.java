@@ -44,8 +44,6 @@ public class FindMeMod {
 
     public static void init() {
         FINDME = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MOD_ID, "particle"), FIND_ME_PARTICLE_TYPE);
-        LOGGER.info("[FindMe Debug] Particle type registered: id={}, class={}", 
-            BuiltInRegistries.PARTICLE_TYPE.getKey(FINDME), FINDME.getClass().getName());
 
         PayloadTypeRegistry.playC2S().register(PositionRequestMessage.TYPE, PositionRequestMessage.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(PositionRequestMessage.TYPE, PositionRequestMessage::handle);

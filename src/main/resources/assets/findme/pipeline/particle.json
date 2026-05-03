@@ -1,6 +1,0 @@
-{
-  "depthTest": "NO_DEPTH_TEST",
-  "blend": "TRANSLUCENT",
-  "cull": false,
-  "depthWrite": false
-}
