@@ -16,7 +16,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.Identifier;
 
-
 import java.util.ArrayList;
 
 import static net.minecraft.client.particle.ParticleEngine.RENDER_ORDER;
@@ -29,8 +28,6 @@ public class FindMeModClient {
     public static KeyMapping PULL_ONE = new KeyMapping("key.findme.pull_one", InputConstants.getKey("key.keyboard.keypad.0").getValue(), FINDME_CATEGORY);
     public static KeyMapping PULL_STACK = new KeyMapping("key.findme.pull_stack", InputConstants.getKey("key.keyboard.keypad.1").getValue(), FINDME_CATEGORY);
 
-
-
     public static long lastTooltipTime = 0;
     public static ItemStack lastRenderedStack = ItemStack.EMPTY;
 
@@ -38,29 +35,26 @@ public class FindMeModClient {
     public static boolean keyPullOnePressed = false;
     public static boolean keyPullStackPressed = false;
 
+    private static boolean deferredInitDone = false;
+
     public FindMeModClient() {
         init();
     }
 
     private static void init() {
-
         KeyBindingHelper.registerKeyBinding(KEY);
         KeyBindingHelper.registerKeyBinding(PULL_ONE);
         KeyBindingHelper.registerKeyBinding(PULL_STACK);
-        ClientTickEvents.START_CLIENT_TICK.register(client -> ClientTickHandler.clientTick());
-        ItemTooltipCallback.EVENT.register((stack, context,flag, lines) -> {
+        ClientTickEvents.START_CLIENT_TICK.register(client -> {
+            ClientTickHandler.clientTick();
+            runDeferredInit(client);
+        });
+        ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> {
             if (!stack.isEmpty() && Minecraft.getInstance().level != null) {
                 lastRenderedStack = stack.copyWithCount(1);
                 lastTooltipTime = Minecraft.getInstance().level.getGameTime();
             }
         });
-
-    ParticleFactoryRegistry.getInstance().register(
-        FindMeMod.FIND_ME_PARTICLE_TYPE,
-        (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) -> {
-            return new ParticlePosition(clientLevel, d, e, f, g, h, i);
-        }
-    );
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.level == null || client.player == null) return;
@@ -70,23 +64,40 @@ public class FindMeModClient {
                 keyPullStackPressed = false;
                 return;
             }
-            if (keySearchPressed){
-                    keySearchPressed = false;
-                    ClientPlayNetworking.send(new PositionRequestMessage(lastRenderedStack));
+            if (keySearchPressed) {
+                keySearchPressed = false;
+                ClientPlayNetworking.send(new PositionRequestMessage(lastRenderedStack));
             }
-                if (keyPullOnePressed){
-                    keyPullOnePressed = false;
-                    ClientPlayNetworking.send(new PullItemRequestMessage(lastRenderedStack, 1));
-                }
-                if (keyPullStackPressed){
-                    keyPullStackPressed = false;
-                    ClientPlayNetworking.send(new PullItemRequestMessage(lastRenderedStack, lastRenderedStack.getMaxStackSize()));
-                }
-            });
+            if (keyPullOnePressed) {
+                keyPullOnePressed = false;
+                ClientPlayNetworking.send(new PullItemRequestMessage(lastRenderedStack, 1));
+            }
+            if (keyPullStackPressed) {
+                keyPullStackPressed = false;
+                ClientPlayNetworking.send(new PullItemRequestMessage(lastRenderedStack, lastRenderedStack.getMaxStackSize()));
+            }
+        });
+    }
+
+    private static void runDeferredInit(Minecraft client) {
+        if (deferredInitDone) return;
+        if (client.getTextureManager() == null) return;
+        deferredInitDone = true;
+
+        // 预加载粒子图集，防止渲染通道内延迟加载导致 Frame Graph 崩溃
+        client.getTextureManager().getTexture(Identifier.withDefaultNamespace("particles"));
+
+        // 注册粒子工厂（移至此阶段确保 TextureManager 已就绪）
+        ParticleFactoryRegistry.getInstance().register(
+            FindMeMod.FIND_ME_PARTICLE_TYPE,
+            (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) ->
+                new ParticlePosition(clientLevel, d, e, f, g, h, i)
+        );
+
+        // 注册自定义粒子渲染层
         if (!RENDER_ORDER.contains(ParticlePosition.CUSTOM)) {
             RENDER_ORDER = new ArrayList<>(RENDER_ORDER);
             RENDER_ORDER.add(ParticlePosition.CUSTOM);
         }
     }
-
 }
