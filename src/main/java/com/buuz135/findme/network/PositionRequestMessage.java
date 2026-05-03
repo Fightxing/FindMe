@@ -71,6 +71,8 @@ public class PositionRequestMessage implements CustomPacketPayload {
         context.server().execute(() -> {
             AABB box = new AABB(context.player().blockPosition()).inflate(FindMeMod.CONFIG.COMMON.RADIUS_RANGE);
             List<BlockPos> blockPosList = new ArrayList<>();
+            List<Integer> itemEntityIds = new ArrayList<>();
+            List<Integer> entityIds = new ArrayList<>();
             for (BlockPos blockPos : getBlockPosInAABB(box)) {
                 BlockEntity tileEntity = context.player().level().getBlockEntity(blockPos);
                 if (tileEntity != null && FindMeMod.BLOCK_CHECKERS.stream().anyMatch(predicate -> predicate.test(tileEntity, stack))) {
@@ -80,7 +82,7 @@ public class PositionRequestMessage implements CustomPacketPayload {
             if (FindMeMod.CONFIG.COMMON.SEARCH_ITEM_ENTITIES) {
                 for (ItemEntity itemEntity : context.player().level().getEntitiesOfClass(ItemEntity.class, box)) {
                     if (compareItems(stack, itemEntity.getItem())) {
-                        blockPosList.add(itemEntity.blockPosition());
+                        itemEntityIds.add(itemEntity.getId());
                     }
                 }
             }
@@ -91,7 +93,7 @@ public class PositionRequestMessage implements CustomPacketPayload {
                     if (entity instanceof Container container) {
                         for (int i = 0; i < container.getContainerSize(); i++) {
                             if (!container.getItem(i).isEmpty() && compareItems(stack, container.getItem(i))) {
-                                blockPosList.add(entity.blockPosition());
+                                entityIds.add(entity.getId());
                                 found = true;
                                 break;
                             }
@@ -101,7 +103,7 @@ public class PositionRequestMessage implements CustomPacketPayload {
                         Container inv = carrier.getInventory();
                         for (int i = 0; i < inv.getContainerSize(); i++) {
                             if (!inv.getItem(i).isEmpty() && compareItems(stack, inv.getItem(i))) {
-                                blockPosList.add(entity.blockPosition());
+                                entityIds.add(entity.getId());
                                 found = true;
                                 break;
                             }
@@ -110,7 +112,7 @@ public class PositionRequestMessage implements CustomPacketPayload {
                     if (!found && entity instanceof LivingEntity livingEntity) {
                         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND}) {
                             if (compareItems(stack, livingEntity.getItemBySlot(slot))) {
-                                blockPosList.add(entity.blockPosition());
+                                entityIds.add(entity.getId());
                                 found = true;
                                 break;
                             }
@@ -118,7 +120,7 @@ public class PositionRequestMessage implements CustomPacketPayload {
                         if (!found) {
                             for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}) {
                                 if (compareItems(stack, livingEntity.getItemBySlot(slot))) {
-                                    blockPosList.add(entity.blockPosition());
+                                    entityIds.add(entity.getId());
                                     break;
                                 }
                             }
@@ -126,8 +128,8 @@ public class PositionRequestMessage implements CustomPacketPayload {
                     }
                 }
             }
-            if (!blockPosList.isEmpty()) {
-                ServerPlayNetworking.send((ServerPlayer) context.player(), new PositionResponseMessage(blockPosList));
+            if (!blockPosList.isEmpty() || !itemEntityIds.isEmpty() || !entityIds.isEmpty()) {
+                ServerPlayNetworking.send((ServerPlayer) context.player(), new PositionResponseMessage(blockPosList, itemEntityIds, entityIds));
             }
 
 

@@ -1,5 +1,6 @@
 package com.buuz135.findme.client;
 
+import com.buuz135.findme.tracking.HighlightCache;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ public class ClientTickHandler {
     private static LinkedList<WaitEntry> waitlist = new LinkedList<>();
 
     public static void clientTick() {
+        HighlightCache.tick();
 
         ticking = true;
         synchronized (lock) {

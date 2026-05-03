@@ -1,26 +1,18 @@
 package com.buuz135.findme;
 
 import com.buuz135.findme.client.ClientTickHandler;
-import com.buuz135.findme.client.ParticlePosition;
 import com.buuz135.findme.network.PositionRequestMessage;
 import com.buuz135.findme.network.PullItemRequestMessage;
 import com.mojang.blaze3d.platform.InputConstants;
 
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.Identifier;
-
-import java.util.ArrayList;
-
-import static net.minecraft.client.particle.ParticleEngine.RENDER_ORDER;
 
 public class FindMeModClient {
 
@@ -53,30 +45,6 @@ public class FindMeModClient {
                 lastTooltipTime = Minecraft.getInstance().level.getGameTime();
             }
         });
-
-        ParticleProviderRegistry.getInstance().register(
-            FindMeMod.FIND_ME_PARTICLE_TYPE,
-            (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) -> {
-                FindMeMod.LOGGER.info("[FindMe Debug] Particle factory called: type={}, pos=({}, {}, {})",
-                    particleOptions.getClass().getSimpleName(),
-                    String.format("%.2f", d), String.format("%.2f", e), String.format("%.2f", f));
-                return new ParticlePosition(clientLevel, d, e, f, g, h, i);
-            }
-        );
-        FindMeMod.LOGGER.info("[FindMe Debug] Particle factory registered for type: {}",
-            BuiltInRegistries.PARTICLE_TYPE.getKey(FindMeMod.FIND_ME_PARTICLE_TYPE));
-
-        if (!RENDER_ORDER.contains(ParticlePosition.CUSTOM)) {
-            RENDER_ORDER = new ArrayList<>(RENDER_ORDER);
-            RENDER_ORDER.add(ParticlePosition.CUSTOM);
-            FindMeMod.LOGGER.info("[FindMe Debug] CUSTOM added to RENDER_ORDER. New size={}",
-                RENDER_ORDER.size());
-        } else {
-            FindMeMod.LOGGER.info("[FindMe Debug] CUSTOM already in RENDER_ORDER. Size={}",
-                RENDER_ORDER.size());
-        }
-
-        // 粒子图集会在资源重载时自动加载，无需手动预加载
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.level == null || client.player == null) return;

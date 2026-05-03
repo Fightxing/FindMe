@@ -1,13 +1,8 @@
 package com.buuz135.findme.network;
 
-
 import com.buuz135.findme.FindMeMod;
-import com.buuz135.findme.client.ClientTickHandler;
-import com.buuz135.findme.client.ParticlePosition;
-import com.buuz135.findme.tracking.TrackingList;
+import com.buuz135.findme.tracking.HighlightCache;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -25,62 +20,81 @@ public class PositionResponseMessage implements CustomPacketPayload {
     public static CustomPacketPayload.Type<PositionResponseMessage> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(FindMeMod.MOD_ID, "position_response"));
     public static StreamCodec<? super RegistryFriendlyByteBuf, PositionResponseMessage> CODEC = new StreamCodec<>() {
         @Override
-        public PositionResponseMessage decode(RegistryFriendlyByteBuf object) {
-            List<BlockPos> positions = new ArrayList<>();
-            int amount = object.readInt();
-            while (amount > 0) {
-                positions.add(object.readBlockPos());
-                --amount;
+        public PositionResponseMessage decode(RegistryFriendlyByteBuf buf) {
+            List<BlockPos> blockPositions = new ArrayList<>();
+            int blockCount = buf.readInt();
+            for (int i = 0; i < blockCount; i++) {
+                blockPositions.add(buf.readBlockPos());
             }
-            return new PositionResponseMessage(positions);
+            List<Integer> itemEntityIds = new ArrayList<>();
+            int itemCount = buf.readInt();
+            for (int i = 0; i < itemCount; i++) {
+                itemEntityIds.add(buf.readInt());
+            }
+            List<Integer> entityIds = new ArrayList<>();
+            int entityCount = buf.readInt();
+            for (int i = 0; i < entityCount; i++) {
+                entityIds.add(buf.readInt());
+            }
+            return new PositionResponseMessage(blockPositions, itemEntityIds, entityIds);
         }
 
         @Override
-        public void encode(RegistryFriendlyByteBuf registryFriendlyByteBuf, PositionResponseMessage positionRequestMessage) {
-            registryFriendlyByteBuf.writeInt(positionRequestMessage.positions.size());
-            for (BlockPos position : positionRequestMessage.positions) {
-                registryFriendlyByteBuf.writeBlockPos(position);
+        public void encode(RegistryFriendlyByteBuf buf, PositionResponseMessage msg) {
+            buf.writeInt(msg.blockPositions.size());
+            for (BlockPos pos : msg.blockPositions) {
+                buf.writeBlockPos(pos);
+            }
+            buf.writeInt(msg.itemEntityIds.size());
+            for (int id : msg.itemEntityIds) {
+                buf.writeInt(id);
+            }
+            buf.writeInt(msg.entityIds.size());
+            for (int id : msg.entityIds) {
+                buf.writeInt(id);
             }
         }
     };
 
-    private List<BlockPos> positions;
+    private List<BlockPos> blockPositions;
+    private List<Integer> itemEntityIds;
+    private List<Integer> entityIds;
 
-    public PositionResponseMessage(List<BlockPos> positions) {
-        this.positions = positions;
+    public PositionResponseMessage(List<BlockPos> blockPositions, List<Integer> itemEntityIds, List<Integer> entityIds) {
+        this.blockPositions = blockPositions;
+        this.itemEntityIds = itemEntityIds;
+        this.entityIds = entityIds;
     }
 
     public PositionResponseMessage() {
+        this.blockPositions = new ArrayList<>();
+        this.itemEntityIds = new ArrayList<>();
+        this.entityIds = new ArrayList<>();
     }
-
 
     public void handle(ClientPlayNetworking.Context context) {
         Minecraft.getInstance().execute(() -> {
-            FindMeMod.LOGGER.info("[FindMe Debug] PositionResponse received: {} positions, level={}, player={}",
-                positions.size(),
-                Minecraft.getInstance().level != null,
-                Minecraft.getInstance().player != null);
-            if (positions.size() > 0) {
+            int total = blockPositions.size() + itemEntityIds.size() + entityIds.size();
+            if (total > 0) {
                 Minecraft.getInstance().player.closeContainer();
                 Minecraft.getInstance().player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-                if (FindMeMod.CONFIG.CLIENT.CONTAINER_TRACKING) {
-                    TrackingList.beginTracking();
-                    ClientTickHandler.addRunnable(TrackingList::clear, FindMeMod.CONFIG.CLIENT.CONTAINER_TRACK_TIME);
-                }
-                FindMeMod.LOGGER.info("[FindMe Debug] Spawning particles for {} positions...", positions.size());
-                for (BlockPos position : positions) {
-                    for (int i = 0; i < 2; ++i)
-                        addParticle(position);
-                }
-                FindMeMod.LOGGER.info("[FindMe Debug] Done spawning particles. Engine exists: {}",
-                    Minecraft.getInstance().particleEngine != null);
 
-                if (FindMeMod.CONFIG.CLIENT.SNAP_TO_CONTAINER) {
-                    // Find the nearest container to the player
+                int duration = FindMeMod.CONFIG.CLIENT.LASER_DURATION;
+                for (BlockPos pos : blockPositions) {
+                    HighlightCache.addBlockHighlight(pos, duration);
+                }
+                for (int id : itemEntityIds) {
+                    HighlightCache.addItemEntityHighlight(id, duration);
+                }
+                for (int id : entityIds) {
+                    HighlightCache.addEntityHighlight(id, duration);
+                }
+
+                if (FindMeMod.CONFIG.CLIENT.SNAP_TO_CONTAINER && !blockPositions.isEmpty()) {
                     BlockPos nearest = null;
                     double nearestDistance = Double.MAX_VALUE;
                     BlockPos playerPos = Minecraft.getInstance().player.blockPosition();
-                    for (BlockPos pos : positions) {
+                    for (BlockPos pos : blockPositions) {
                         double dist = playerPos.distSqr(pos);
                         if (dist < nearestDistance) {
                             nearestDistance = dist;
@@ -101,23 +115,8 @@ public class PositionResponseMessage implements CustomPacketPayload {
                         Minecraft.getInstance().player.setXRot(pitch);
                     }
                 }
-            } else {
-                FindMeMod.LOGGER.info("[FindMe Debug] No positions to highlight (empty result)");
             }
         });
-        //context.get().setPacketHandled(true);
-    }
-
-    @Environment(EnvType.CLIENT)
-    public void addParticle(BlockPos position) {
-        Minecraft.getInstance().particleEngine.add(
-            new ParticlePosition(
-                Minecraft.getInstance().level, 
-                position.getX() + 0.75 - Minecraft.getInstance().player.level().getRandom().nextDouble() / 2D,
-                position.getY() + 0.75 - Minecraft.getInstance().player.level().getRandom().nextDouble() / 2D,
-                position.getZ() + 0.75 - Minecraft.getInstance().player.level().getRandom().nextDouble() / 2D,
-                0, 0, 0));
-        //Minecraft.getInstance().particleEngine.add(new AshParticle((ClientLevel) Minecraft.getInstance().player.level(), position.getX() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 1 + position.getY() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, position.getZ() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 0, 0, 0));
     }
 
     @Override
