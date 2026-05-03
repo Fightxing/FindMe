@@ -15,6 +15,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +74,33 @@ public class PositionResponseMessage implements CustomPacketPayload {
                 }
                 FindMeMod.LOGGER.info("[FindMe Debug] Done spawning particles. Engine exists: {}",
                     Minecraft.getInstance().particleEngine != null);
+
+                if (FindMeMod.CONFIG.CLIENT.SNAP_TO_CONTAINER) {
+                    // Find the nearest container to the player
+                    BlockPos nearest = null;
+                    double nearestDistance = Double.MAX_VALUE;
+                    BlockPos playerPos = Minecraft.getInstance().player.blockPosition();
+                    for (BlockPos pos : positions) {
+                        double dist = playerPos.distSqr(pos);
+                        if (dist < nearestDistance) {
+                            nearestDistance = dist;
+                            nearest = pos;
+                        }
+                    }
+                    if (nearest != null) {
+                        Vec3 eyePos = Minecraft.getInstance().player.getEyePosition();
+                        Vec3 targetPos = Vec3.atCenterOf(nearest);
+                        double dx = targetPos.x - eyePos.x;
+                        double dy = targetPos.y - eyePos.y;
+                        double dz = targetPos.z - eyePos.z;
+
+                        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+                        float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+
+                        Minecraft.getInstance().player.setYRot(yaw);
+                        Minecraft.getInstance().player.setXRot(pitch);
+                    }
+                }
             } else {
                 FindMeMod.LOGGER.info("[FindMe Debug] No positions to highlight (empty result)");
             }

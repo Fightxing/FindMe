@@ -12,6 +12,7 @@ public class FindMeConfig {
 
         public int CONTAINER_TRACK_TIME = 30 * 20;
         public boolean CONTAINER_TRACKING = true;
+        public boolean SNAP_TO_CONTAINER = true;
         public String CONTAINER_HIGHLIGHT_COLOR = "#cf9d15";
         private transient Color currentColor = null;
         public String PARTICLE_HIGHLIGHT_COLOR = "#ffffff";
@@ -48,6 +49,7 @@ public class FindMeConfig {
     public static class Common {
         public int RADIUS_RANGE = 8;
         public boolean IGNORE_ITEM_DAMAGE = false;
+        public boolean SEARCH_ITEM_ENTITIES = true;
 
     }
 }

@@ -10,6 +10,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
@@ -69,6 +70,13 @@ public class PositionRequestMessage implements CustomPacketPayload {
                 BlockEntity tileEntity = context.player().level().getBlockEntity(blockPos);
                 if (tileEntity != null && FindMeMod.BLOCK_CHECKERS.stream().anyMatch(predicate -> predicate.test(tileEntity, stack))) {
                     blockPosList.add(blockPos);
+                }
+            }
+            if (FindMeMod.CONFIG.COMMON.SEARCH_ITEM_ENTITIES) {
+                for (ItemEntity itemEntity : context.player().level().getEntitiesOfClass(ItemEntity.class, box)) {
+                    if (compareItems(stack, itemEntity.getItem())) {
+                        blockPosList.add(itemEntity.blockPosition());
+                    }
                 }
             }
             if (!blockPosList.isEmpty()) {
