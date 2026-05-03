@@ -9,11 +9,13 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 import java.util.ArrayList;
@@ -21,7 +23,7 @@ import java.util.List;
 
 public class PositionResponseMessage implements CustomPacketPayload {
 
-    public static CustomPacketPayload.Type<PositionResponseMessage> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(FindMeMod.MOD_ID, "position_response"));
+    public static CustomPacketPayload.Type<PositionResponseMessage> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(FindMeMod.MOD_ID, "position_response"));
     public static StreamCodec<? super RegistryFriendlyByteBuf, PositionResponseMessage> CODEC = new StreamCodec<>() {
         @Override
         public PositionResponseMessage decode(RegistryFriendlyByteBuf object) {
@@ -73,7 +75,18 @@ public class PositionResponseMessage implements CustomPacketPayload {
 
     @Environment(EnvType.CLIENT)
     public void addParticle(BlockPos position) {
-        Minecraft.getInstance().particleEngine.add(new ParticlePosition(Minecraft.getInstance().level, position.getX() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, position.getY() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, position.getZ() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 0, 0, 0));
+        TextureAtlasSprite sprite = Minecraft.getInstance()
+        .getAtlasManager()
+        .getAtlasOrThrow(TextureAtlas.LOCATION_PARTICLES)
+        .getSprite(Identifier.withDefaultNamespace("particle/glitter_4"));
+        Minecraft.getInstance().particleEngine.add(
+            new ParticlePosition(
+                Minecraft.getInstance().level, 
+                position.getX() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 
+                position.getY() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 
+                position.getZ() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 
+                0, 0, 0,
+                sprite));
         //Minecraft.getInstance().particleEngine.add(new AshParticle((ClientLevel) Minecraft.getInstance().player.level(), position.getX() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 1 + position.getY() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, position.getZ() + 0.75 - Minecraft.getInstance().player.level().random.nextDouble() / 2D, 0, 0, 0));
     }
 

@@ -4,6 +4,7 @@ import com.buuz135.findme.FindMeModClient;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.KeyEvent;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -33,21 +34,20 @@ public class MixinKeyboardHandler {
         if (action != 1) return;
 
         // 仅处理 Minecraft 主窗口的按键，避免在其他弹出窗口中误触发
-        if (windowPointer != Minecraft.getInstance().getWindow().getWindow()) return;
+        if (windowPointer != Minecraft.getInstance().getWindow().handle()) return;
         if (Minecraft.getInstance().screen != null) {
             if (Minecraft.getInstance().screen.getFocused() instanceof EditBox) {
                 return;
             }
         }
-
-
-        if (FindMeModClient.KEY.matches(key, scanCode)) {
+        KeyEvent keyEvent = new KeyEvent(key, scanCode, modifiers);
+        if (FindMeModClient.KEY.matches(keyEvent)) {
             FindMeModClient.keySearchPressed = true;
-        }
-        if (FindMeModClient.PULL_ONE.matches(key, scanCode)) {
+        }   
+        if (FindMeModClient.PULL_ONE.matches(keyEvent)) {
             FindMeModClient.keyPullOnePressed = true;
         }
-        if (FindMeModClient.PULL_STACK.matches(key, scanCode)) {
+        if (FindMeModClient.PULL_STACK.matches(keyEvent)) {
             FindMeModClient.keyPullStackPressed = true;
         }
     }

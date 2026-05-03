@@ -7,107 +7,85 @@ import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-
 
 import java.awt.*;
 
 @Environment(EnvType.CLIENT)
 public class ParticlePosition extends SingleQuadParticle {
 
-
-    // --- 新建 RenderPipeline，替换旧 RenderStateShard 设置 ---
     private static final RenderPipeline FINDME_PARTICLE_PIPELINE = RenderPipelines.register(
-        RenderPipeline.builder(RenderPipelines.PARTICLE_SNIPPET)
-            .withLocation(ResourceLocation.fromNamespaceAndPath("findme", "pipeline/particle"))
+        RenderPipeline.builder()
+            .withLocation(Identifier.fromNamespaceAndPath("findme", "pipeline/particle"))
+            .withVertexShader("core/particle")
+            .withFragmentShader("core/particle")
             .withVertexFormat(DefaultVertexFormat.PARTICLE, VertexFormat.Mode.QUADS)
-            // 不使用深度测试（等效于原 NO_DEPTH_TEST，让粒子穿墙可见）
-            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-            // 透明混合（等效于原 TRANSLUCENT_TRANSPARENCY）
-            .withBlend(BlendFunction.TRANSLUCENT)
-            // 不剔除背面（等效于原 NO_CULL）
-            .withCull(false)
-            // 不写入深度缓冲（保证隔墙可见且不遮挡其他物体）
-            .withDepthWrite(false)
-            // 正常写入颜色，不写入 alpha 蒙版
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)   // 穿墙可见
+            .withBlend(BlendFunction.TRANSLUCENT)                     // 透明混合
+            .withCull(false)                                          // 不剔除
+            .withDepthWrite(false)                                    // 不写深度
             .withColorWrite(true, false)
-            // 采样器，对应 shader 中的 Sampler0（纹理）
             .withSampler("Sampler0")
             .build()
     );
 
-    // --- RenderType 只保留纹理 + 光照贴图，其余全部由 Pipeline 管理 ---
-    private static final RenderType FINDME_PARTICLE_RENDER_TYPE = RenderType.create(
-        "findme_particle",
-        256,
-        false,   // affects crumbling
-        true,    // sort on upload
-        FINDME_PARTICLE_PIPELINE,
-        RenderType.CompositeState.builder()
-            .setTextureState(new RenderStateShard.TextureStateShard(
-                ResourceLocation.withDefaultNamespace("textures/particle/glitter_4.png"),
-                false
-            ))
-            .setLightmapState(RenderStateShard.LIGHTMAP)
-            .createCompositeState(false)
+    // ========== 2. Layer：定义粒子所属图层 ==========
+    private static final Layer FINDME_LAYER = new Layer(
+        true,                            // translucent = true（半透明）
+        TextureAtlas.LOCATION_PARTICLES, // 粒子图集
+        FINDME_PARTICLE_PIPELINE         // 自定义管线
     );
 
-    public static final ParticleRenderType CUSTOM = new ParticleRenderType("CUSTOM2", FINDME_PARTICLE_RENDER_TYPE);
+    // ========== 3. ParticleRenderType（新版 record） ==========
+    public static final ParticleRenderType CUSTOM = new ParticleRenderType("CUSTOM2");
 
-    public ParticlePosition(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ) {
-        super(world, x, y, z, 0.0D, 0.0D, 0.0D);
-        this.xd *= 0.10000000149011612D;
-        this.yd *= 0.10000000149011612D;
-        this.zd *= 0.10000000149011612D;
-        this.xd += motionX;
-        this.yd += motionY;
-        this.zd += motionZ;
+    // ========== 4. 构造器（使用 5 参版本，手动设置速度） ==========
+    public ParticlePosition(ClientLevel world, double x, double y, double z,
+                            double motionX, double motionY, double motionZ,
+                            TextureAtlasSprite sprite) {
+        // 5 参构造器：仅位置 + 精灵图，速度由父类设为 0
+        super(world, x, y, z, sprite);
+        // 原逻辑：xd *= 0.1（=0）后 += motion → 直接赋值为 motion
+        this.xd = motionX;
+        this.yd = motionY;
+        this.zd = motionZ;
+
         float colorOffset = (float) (Math.random() * 0.30000001192092896D);
         Color c = FindMeMod.CONFIG.CLIENT.getParticleColor();
-        this.rCol = ((float)c.getRed()) / 255f - colorOffset;
-        this.gCol = ((float)c.getGreen()) / 255f - colorOffset;
-        this.bCol = ((float)c.getBlue()) / 255f - colorOffset;
-        //this.particleScale *= 1.5F;
+        this.rCol = ((float) c.getRed()) / 255f - colorOffset;
+        this.gCol = ((float) c.getGreen()) / 255f - colorOffset;
+        this.bCol = ((float) c.getBlue()) / 255f - colorOffset;
         this.lifetime = 20 * 5;
         this.hasPhysics = false;
     }
 
+    // ========== 5. 实现抽象方法 getLayer() ==========
     @Override
-    public ParticleRenderType getRenderType() {
+    protected Layer getLayer() {
+        return FINDME_LAYER;
+    }
+
+    // ========== 6. getGroup() 替代旧 getRenderType() ==========
+    @Override
+    public ParticleRenderType getGroup() {
         return CUSTOM;
     }
 
-    @Override
-    public float getQuadSize(float p_217561_1_) {
-        return this.quadSize * Mth.clamp(((float) this.age + p_217561_1_) / (float) this.lifetime * 32.0F, 0.0F, 1.0F);
-    }
+    // ========== 7. UV 方法已删除 — 父类自动从 sprite 获取 ==========
+    // 新版 SingleQuadParticle 中 getU0/U1/V0/V1 不再是抽象方法，
+    // 父类默认返回 this.sprite.getU0() 等，自动处理图集子区域。
 
     @Override
-    protected float getU0() {
-        return 0;
-    }
-
-    @Override
-    protected float getU1() {
-        return 1f;
-    }
-
-    @Override
-    protected float getV0() {
-        return 0;
-    }
-
-    @Override
-    protected float getV1() {
-        return 1f;
+    public float getQuadSize(float partialTicks) {
+        return this.quadSize * Mth.clamp(
+            ((float) this.age + partialTicks) / (float) this.lifetime * 32.0F, 0.0F, 1.0F);
     }
 
     @Override
@@ -121,17 +99,7 @@ public class ParticlePosition extends SingleQuadParticle {
     }
 
     @Override
-    public void setAlpha(float alpha) {
-        super.setAlpha(alpha);
-    }
-
-    @Override
-    public void render(VertexConsumer buffer, Camera renderInfo, float partialTicks) {
-        super.render(buffer, renderInfo, partialTicks);
-    }
-
-    @Override
-    protected int getLightColor(float f) {
+    protected int getLightColor(float partialTicks) {
         return 15728880;
     }
 }

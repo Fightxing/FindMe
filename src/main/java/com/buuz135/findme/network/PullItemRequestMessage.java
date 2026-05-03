@@ -8,7 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
@@ -18,7 +18,7 @@ import net.minecraft.world.phys.AABB;
 
 public class PullItemRequestMessage implements CustomPacketPayload {
 
-    public static CustomPacketPayload.Type<PullItemRequestMessage> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(FindMeMod.MOD_ID, "pull_item_request"));
+    public static CustomPacketPayload.Type<PullItemRequestMessage> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(FindMeMod.MOD_ID, "pull_item_request"));
     public static StreamCodec<? super RegistryFriendlyByteBuf, PullItemRequestMessage> CODEC = new StreamCodec<>() {
         @Override
         public PullItemRequestMessage decode(RegistryFriendlyByteBuf object) {

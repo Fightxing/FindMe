@@ -15,7 +15,7 @@ import net.minecraft.core.particles.ParticleType;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.File;
 import java.io.FileReader;
@@ -40,7 +40,7 @@ public class FindMeMod {
     public static ParticleType<?> FINDME;
 
     public static void init() {
-        FINDME = Registry.register(BuiltInRegistries.PARTICLE_TYPE, ResourceLocation.fromNamespaceAndPath(MOD_ID, "particle"), FIND_ME_PARTICLE_TYPE);
+        FINDME = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Identifier.fromNamespaceAndPath(MOD_ID, "particle"), FIND_ME_PARTICLE_TYPE);
 
         PayloadTypeRegistry.playC2S().register(PositionRequestMessage.TYPE, PositionRequestMessage.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(PositionRequestMessage.TYPE, PositionRequestMessage::handle);

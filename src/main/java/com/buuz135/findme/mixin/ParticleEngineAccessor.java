@@ -2,10 +2,15 @@ package com.buuz135.findme.mixin;
 
 import com.buuz135.findme.FindMeMod;
 import com.buuz135.findme.client.ParticlePosition;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.particle.ParticleProvider;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.RandomSource;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,10 +21,26 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ParticleEngineAccessor {
 
     @Shadow
-    protected abstract <T extends ParticleOptions> void register(ParticleType<T> particleType, ParticleProvider<T> particleProvider);
+    protected abstract <T extends ParticleOptions> void register(
+        ParticleType<T> particleType,
+        ParticleProvider<T> particleProvider
+    );
 
-    @Inject(at = @At("HEAD"), method = "Lnet/minecraft/client/particle/ParticleEngine;registerProviders()V")
+    @Inject(
+        at = @At("HEAD"),
+        method = "Lnet/minecraft/client/particle/ParticleEngine;registerProviders()V"
+    )
     private void registerProviders(CallbackInfo ci) {
-        this.register(FindMeMod.FIND_ME_PARTICLE_TYPE, (particleOptions, clientLevel, d, e, f, g, h, i) -> new ParticlePosition(clientLevel, d, e, f, g, h, i));
+        this.register(
+            FindMeMod.FIND_ME_PARTICLE_TYPE,
+            (particleOptions, clientLevel, d, e, f, g, h, i, randomSource) -> {
+                // 从粒子图集中获取精灵图
+                TextureAtlasSprite sprite = Minecraft.getInstance()
+                    .getAtlasManager()
+                    .getAtlasOrThrow(TextureAtlas.LOCATION_PARTICLES)
+                    .getSprite(Identifier.withDefaultNamespace("particle/glitter_4"));
+                return new ParticlePosition(clientLevel, d, e, f, g, h, i, sprite);
+            }
+        );
     }
 }
