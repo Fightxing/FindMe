@@ -10,6 +10,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -90,20 +91,46 @@ public class PositionResponseMessage implements CustomPacketPayload {
                     HighlightCache.addEntityHighlight(id, duration);
                 }
 
-                if (FindMeMod.CONFIG.CLIENT.SNAP_TO_CONTAINER && !blockPositions.isEmpty()) {
-                    BlockPos nearest = null;
+                if (FindMeMod.CONFIG.CLIENT.SNAP_TO_CONTAINER && total > 0) {
+                    var level = Minecraft.getInstance().level;
+                    Vec3 eyePos = Minecraft.getInstance().player.getEyePosition();
                     double nearestDistance = Double.MAX_VALUE;
-                    BlockPos playerPos = Minecraft.getInstance().player.blockPosition();
+                    Vec3 targetPos = null;
+
                     for (BlockPos pos : blockPositions) {
-                        double dist = playerPos.distSqr(pos);
+                        Vec3 center = Vec3.atCenterOf(pos);
+                        double dist = center.distanceToSqr(eyePos);
                         if (dist < nearestDistance) {
                             nearestDistance = dist;
-                            nearest = pos;
+                            targetPos = center;
                         }
                     }
-                    if (nearest != null) {
-                        Vec3 eyePos = Minecraft.getInstance().player.getEyePosition();
-                        Vec3 targetPos = Vec3.atCenterOf(nearest);
+
+                    for (int id : itemEntityIds) {
+                        Entity entity = level.getEntity(id);
+                        if (entity != null) {
+                            Vec3 pos = entity.position();
+                            double dist = pos.distanceToSqr(eyePos);
+                            if (dist < nearestDistance) {
+                                nearestDistance = dist;
+                                targetPos = pos;
+                            }
+                        }
+                    }
+
+                    for (int id : entityIds) {
+                        Entity entity = level.getEntity(id);
+                        if (entity != null) {
+                            Vec3 pos = entity.position();
+                            double dist = pos.distanceToSqr(eyePos);
+                            if (dist < nearestDistance) {
+                                nearestDistance = dist;
+                                targetPos = pos;
+                            }
+                        }
+                    }
+
+                    if (targetPos != null) {
                         double dx = targetPos.x - eyePos.x;
                         double dy = targetPos.y - eyePos.y;
                         double dz = targetPos.z - eyePos.z;

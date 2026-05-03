@@ -2,6 +2,7 @@ package com.buuz135.findme.tracking;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,12 +57,31 @@ public class HighlightCache {
     }
 
     public static void tick() {
+        var level = Minecraft.getInstance().level;
+
         Iterator<Entry> iterator = entries.iterator();
         while (iterator.hasNext()) {
             Entry entry = iterator.next();
             entry.remainingTicks--;
             if (entry.remainingTicks <= 0) {
                 iterator.remove();
+                continue;
+            }
+
+            // Cancel highlights when the target no longer exists
+            if (level != null) {
+                switch (entry.getType()) {
+                    case BLOCK -> {
+                        if (entry.getBlockPos() != null && level.getBlockState(entry.getBlockPos()).isAir()) {
+                            iterator.remove();
+                        }
+                    }
+                    case ITEM_ENTITY, ENTITY -> {
+                        if (level.getEntity(entry.getEntityId()) == null) {
+                            iterator.remove();
+                        }
+                    }
+                }
             }
         }
     }

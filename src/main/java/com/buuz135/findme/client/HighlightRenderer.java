@@ -13,6 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import java.awt.*;
 
 import static net.minecraft.gizmos.Gizmos.cuboid;
+import static net.minecraft.gizmos.Gizmos.line;
 import static net.minecraft.gizmos.GizmoStyle.stroke;
 
 @Environment(EnvType.CLIENT)
@@ -56,7 +57,8 @@ public class HighlightRenderer {
         if (entry.getBlockPos() == null) return;
         Color c = FindMeMod.CONFIG.CLIENT.getBlockLaserColor();
         int color = (alpha << 24) | (c.getRed() << 16) | (c.getGreen() << 8) | c.getBlue();
-        var gizmo = cuboid(entry.getBlockPos(), stroke(color, LINE_WIDTH));
+        float width = LINE_WIDTH * FindMeMod.CONFIG.CLIENT.LASER_WIDTH;
+        var gizmo = cuboid(entry.getBlockPos(), stroke(color, width));
         if (alwaysOnTop) gizmo.setAlwaysOnTop();
     }
 
@@ -70,12 +72,48 @@ public class HighlightRenderer {
         int color = (alpha << 24) | (c.getRed() << 16) | (c.getGreen() << 8) | c.getBlue();
 
         Vec3 pos = item.getPosition(partialTick);
+        // Raise the box slightly above the item's center to match its visual position
+        double yOffset = 0.4;
         double half = ITEM_BOX_SIZE / 2.0;
-        AABB box = new AABB(pos.x - half, pos.y - half, pos.z - half,
-                            pos.x + half, pos.y + half, pos.z + half);
 
-        var gizmo = cuboid(box, stroke(color, LINE_WIDTH));
-        if (alwaysOnTop) gizmo.setAlwaysOnTop();
+        // Rotation angle matching item entity's natural spin (~3 degrees per tick)
+        float age = (float) item.getAge() + partialTick;
+        float angle = age * 0.0523598776f; // 3 degrees in radians
+
+        float cos = (float) Math.cos(angle);
+        float sin = (float) Math.sin(angle);
+
+        double cx = pos.x;
+        double cy = pos.y + yOffset;
+        double cz = pos.z;
+        double h = half;
+
+        // 8 vertices of a cube centered at origin (before rotation)
+        double[][] verts = {
+            {-h, -h, -h}, { h, -h, -h}, {-h, -h,  h}, { h, -h,  h},
+            {-h,  h, -h}, { h,  h, -h}, {-h,  h,  h}, { h,  h,  h}
+        };
+
+        // Rotate around Y axis and translate to position
+        Vec3[] v = new Vec3[8];
+        for (int i = 0; i < 8; i++) {
+            double x = verts[i][0] * cos - verts[i][2] * sin;
+            double z = verts[i][0] * sin + verts[i][2] * cos;
+            v[i] = new Vec3(cx + x, cy + verts[i][1], cz + z);
+        }
+
+        // 12 edges of the cube wireframe
+        int[][] edges = {
+            {0, 1}, {1, 3}, {3, 2}, {2, 0},  // bottom face
+            {4, 5}, {5, 7}, {7, 6}, {6, 4},  // top face
+            {0, 4}, {1, 5}, {2, 6}, {3, 7}   // vertical edges
+        };
+
+        float lineWidth = LINE_WIDTH * FindMeMod.CONFIG.CLIENT.LASER_WIDTH;
+        for (int[] edge : edges) {
+            var gizmo = line(v[edge[0]], v[edge[1]], color, lineWidth);
+            if (alwaysOnTop) gizmo.setAlwaysOnTop();
+        }
     }
 
     private static void renderEntityHighlight(HighlightCache.Entry entry, int alpha,
@@ -91,7 +129,8 @@ public class HighlightRenderer {
         // Expand slightly for visual clarity
         bb = bb.inflate(0.05);
 
-        var gizmo = cuboid(bb, stroke(color, LINE_WIDTH));
+        float width = LINE_WIDTH * FindMeMod.CONFIG.CLIENT.LASER_WIDTH;
+        var gizmo = cuboid(bb, stroke(color, width));
         if (alwaysOnTop) gizmo.setAlwaysOnTop();
     }
 }

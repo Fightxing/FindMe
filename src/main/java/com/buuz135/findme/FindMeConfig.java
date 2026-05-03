@@ -25,6 +25,7 @@ public class FindMeConfig {
         private transient Color itemLaserColor = null;
         public String ENTITY_LASER_COLOR = "#FFD700";
         private transient Color entityLaserColor = null;
+        public float LASER_WIDTH = 2.0f; // multiplier relative to default thickness (2.5 px)
 
         public Color getColor() {
             if (currentColor == null) {
@@ -74,7 +75,7 @@ public class FindMeConfig {
     }
 
     public static class Common {
-        public int RADIUS_RANGE = 8;
+        public int RADIUS_RANGE = 32;
         public boolean IGNORE_ITEM_DAMAGE = false;
         public boolean SEARCH_ITEM_ENTITIES = true;
         public boolean SEARCH_ENTITY_INVENTORIES = true;
