@@ -1,6 +1,9 @@
 package com.buuz135.findme.client;
 
 import com.buuz135.findme.FindMeMod;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -10,9 +13,9 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.util.Mth;
-import net.minecraft.util.TriState;
 
 
 import java.awt.*;
@@ -20,26 +23,42 @@ import java.awt.*;
 @Environment(EnvType.CLIENT)
 public class ParticlePosition extends SingleQuadParticle {
 
+
+    // --- 新建 RenderPipeline，替换旧 RenderStateShard 设置 ---
+    private static final RenderPipeline FINDME_PARTICLE_PIPELINE = RenderPipelines.register(
+        RenderPipeline.builder(RenderPipelines.PARTICLE_SNIPPET)
+            .withLocation(ResourceLocation.fromNamespaceAndPath("findme", "pipeline/particle"))
+            .withVertexFormat(DefaultVertexFormat.PARTICLE, VertexFormat.Mode.QUADS)
+            // 不使用深度测试（等效于原 NO_DEPTH_TEST，让粒子穿墙可见）
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            // 透明混合（等效于原 TRANSLUCENT_TRANSPARENCY）
+            .withBlend(BlendFunction.TRANSLUCENT)
+            // 不剔除背面（等效于原 NO_CULL）
+            .withCull(false)
+            // 不写入深度缓冲（保证隔墙可见且不遮挡其他物体）
+            .withDepthWrite(false)
+            // 正常写入颜色，不写入 alpha 蒙版
+            .withColorWrite(true, false)
+            // 采样器，对应 shader 中的 Sampler0（纹理）
+            .withSampler("Sampler0")
+            .build()
+    );
+
+    // --- RenderType 只保留纹理 + 光照贴图，其余全部由 Pipeline 管理 ---
     private static final RenderType FINDME_PARTICLE_RENDER_TYPE = RenderType.create(
-    "findme_particle",
-    DefaultVertexFormat.PARTICLE,
-    VertexFormat.Mode.QUADS,
-    256,
-    false,
-    true,
-    RenderType.CompositeState.builder()
-        .setShaderState(RenderStateShard.PARTICLE_SHADER)
-        .setTextureState(new RenderStateShard.TextureStateShard(
-            ResourceLocation.withDefaultNamespace("textures/particle/glitter_4.png"),
-            false
-        ))
-        .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
-        .setLightmapState(RenderStateShard.LIGHTMAP)
-        .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
-        .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
-        .setCullState(RenderStateShard.NO_CULL)
-        .createCompositeState(false)
-);
+        "findme_particle",
+        256,
+        false,   // affects crumbling
+        true,    // sort on upload
+        FINDME_PARTICLE_PIPELINE,
+        RenderType.CompositeState.builder()
+            .setTextureState(new RenderStateShard.TextureStateShard(
+                ResourceLocation.withDefaultNamespace("textures/particle/glitter_4.png"),
+                false
+            ))
+            .setLightmapState(RenderStateShard.LIGHTMAP)
+            .createCompositeState(false)
+    );
 
     public static final ParticleRenderType CUSTOM = new ParticleRenderType("CUSTOM2", FINDME_PARTICLE_RENDER_TYPE);
 
