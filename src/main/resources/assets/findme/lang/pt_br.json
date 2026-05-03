@@ -1,4 +1,6 @@
 {
     "key.findme.search": "Pesquisar inventários próximos para itens",
-    "key.findme.category": "Me encontre"
+    "key.findme.pull_one": "Pegar 1 Item dos Inventários Próximos",
+    "key.findme.pull_stack": "Pegar 1 Pilha dos Inventários Próximos",
+    "key.category.findme.findme": "Me encontre"
   }

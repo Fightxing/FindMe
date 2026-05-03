@@ -1,4 +1,6 @@
 {
   "key.findme.search": "Пошук предметів у найближчих інвентарях",
-  "key.findme.category": "Find Me"
+  "key.findme.pull_one": "Взяти 1 предмет з найближчих інвентарів",
+  "key.findme.pull_stack": "Взяти 1 стопку з найближчих інвентарів",
+  "key.category.findme.findme": "Find Me"
 }
