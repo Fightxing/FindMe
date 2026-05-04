@@ -1,0 +1,88 @@
+plugins {
+    id "net.fabricmc.fabric-loom" version "1.16-SNAPSHOT"
+    id "com.gradleup.shadow" version "9.4.1"
+    id "java"
+    id "maven-publish"
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/findme.accesswidener")
+
+    runConfigs.client {
+        ideConfigGenerated = true
+    }
+}
+
+repositories {
+    // Add repositories to retrieve artifacts from in here.
+    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+    maven { url "https://maven.fabricmc.net/" }
+}
+
+configurations {
+    shadowCommon // Kept for shadowJar compatibility in single-module layout.
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+}
+
+base.archivesName = rootProject.archives_base_name
+version = rootProject.mod_version
+group = rootProject.maven_group
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    options.release = 25
+}
+
+java {
+    withSourcesJar()
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier.set("dev-shadow")
+}
+
+jar {
+    archiveClassifier.set("fabric")
+}
+
+components.java {
+    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+        skip()
+    }
+}
+
+publishing {
+    publications {
+        mavenFabric(MavenPublication) {
+            artifactId = rootProject.archives_base_name + "-fabric"
+            // add all the jars that should be included when publishing to maven
+            artifact(jar) {
+                classifier null
+            }
+            artifact(sourcesJar) {
+                builtBy sourcesJar
+            }
+        }
+    }
+
+    repositories {
+        // Add repositories to publish to here.
+    }
+}
